@@ -1,5 +1,14 @@
 # Sistema de Análisis Paramétrico OpenSees
 
+[![Tests](https://github.com/GJoe2/opensees-parametric-analysis/actions/workflows/tests.yml/badge.svg)](https://github.com/GJoe2/opensees-parametric-analysis/actions/workflows/tests.yml)
+[![Build and Publish](https://github.com/GJoe2/opensees-parametric-analysis/actions/workflows/publish.yml/badge.svg)](https://github.com/GJoe2/opensees-parametric-analysis/actions/workflows/publish.yml)
+[![PyPI version](https://badge.fury.io/py/opensees-parametric-analysis.svg)](https://badge.fury.io/py/opensees-parametric-analysis)
+[![codecov](https://codecov.io/gh/GJoe2/opensees-parametric-analysis/branch/master/graph/badge.svg)](https://codecov.io/gh/GJoe2/opensees-parametric-analysis)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python versions](https://img.shields.io/pypi/pyversions/opensees-parametric-analysis.svg)](https://pypi.org/project/opensees-parametric-analysis/)
+[![Downloads](https://pepy.tech/badge/opensees-parametric-analysis)](https://pepy.tech/project/opensees-parametric-analysis)
+[![GitHub stars](https://img.shields.io/github/stars/GJoe2/opensees-parametric-analysis.svg?style=social&label=Star)](https://github.com/GJoe2/opensees-parametric-analysis)
+
 ## 🎯 Descripción General
 
 Sistema completo de análisis paramétrico para estructuras de hormigón armado usando OpenSees. Arquitectura modular refactorizada que permite análisis estático, modal y dinámico con control granular de visualización.

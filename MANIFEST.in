@@ -1,0 +1,11 @@
+include README.md
+include LICENSE
+include requirements.txt
+include pytest.ini
+recursive-include docs *.md *.rst *.txt
+recursive-include examples *.py *.md *.json
+recursive-include models *.py *.json
+recursive-include notebooks *.ipynb
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * .DS_Store

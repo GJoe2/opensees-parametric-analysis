@@ -196,7 +196,7 @@ opensees-parametric-analysis/
 
 ## 📜 Licencia
 
-Este proyecto está bajo licencia MIT. Ver archivo LICENSE para más detalles.
+Este proyecto está bajo licencia Apache 2.0. Ver archivo LICENSE para más detalles.
 
 ## 📞 Contacto
 

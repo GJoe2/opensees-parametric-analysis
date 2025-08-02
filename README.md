@@ -53,7 +53,7 @@ print(f"Modelos analizados: {len(results)}")
 ```
 
 ### 🎯 Ejemplos Completos
-Para casos de uso específicos y ejemplos detallados, consulte la carpeta [`examples/`](examples/):
+Para casos de uso específicos y ejemplos detallados, consulte la carpeta [`examples/`](examples/) y la [guía completa](examples/GUIA_EJEMPLOS.md):
 
 | Ejemplo | Descripción | Nivel |
 |---------|-------------|-------|

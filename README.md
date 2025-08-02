@@ -51,6 +51,18 @@ results = runner.run_full_study(
 
 print(f"Modelos analizados: {len(results)}")
 ```
+
+### 🎯 Ejemplos Completos
+Para casos de uso específicos y ejemplos detallados, consulte la carpeta [`examples/`](examples/):
+
+| Ejemplo | Descripción | Nivel |
+|---------|-------------|-------|
+| [01_analisis_individual_basico.py](examples/01_analisis_individual_basico.py) | Análisis de un modelo individual | Principiante |
+| [02_control_visualizacion.py](examples/02_control_visualizacion.py) | Control granular de visualización | Intermedio |
+| [03_tipos_analisis.py](examples/03_tipos_analisis.py) | Diferentes tipos de análisis | Intermedio |
+| [04_estudio_parametrico.py](examples/04_estudio_parametrico.py) | Estudios paramétricos completos | Avanzado |
+| [05_exportacion_scripts.py](examples/05_exportacion_scripts.py) | Exportación de scripts Python | Intermedio |
+| [06_generacion_reportes.py](examples/06_generacion_reportes.py) | Generación de reportes | Avanzado |
 ## 🏗️ Arquitectura
 
 ### Estructura Modular
@@ -163,6 +175,7 @@ Para información completa y detallada, consulte la documentación organizada en
 opensees-parametric-analysis/
 ├── src/                      # Código fuente
 ├── docs/                     # Documentación detallada
+├── examples/                 # Ejemplos de uso prácticos
 ├── notebooks/                # Jupyter notebooks
 ├── models/                   # Modelos generados
 ├── results/                  # Resultados de análisis

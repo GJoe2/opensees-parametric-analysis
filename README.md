@@ -25,13 +25,23 @@ Sistema completo de análisis paramétrico para estructuras de hormigón armado 
 
 ### Instalación
 ```bash
+# Opción 1: Desde PyPI (cuando esté publicado)
+pip install opensees-parametric-analysis
+
+# Opción 2: Desde código fuente
 git clone https://github.com/GJoe2/opensees-parametric-analysis.git
 cd opensees-parametric-analysis
 pip install -r requirements.txt
 ```
 
+**Requisitos:** Python 3.12+ (requerido por openseespy y opstool)
+
 ### Uso Básico
 ```python
+# Si instalaste desde PyPI
+from opensees_parametric_analysis import ModelBuilder, AnalysisEngine
+
+# Si usas código fuente
 from src.model_builder import ModelBuilder
 from src.analysis_engine import AnalysisEngine
 
@@ -47,6 +57,10 @@ print(f"Periodo fundamental: {results['modal_analysis']['fundamental_period']:.4
 
 ### Estudio Paramétrico
 ```python
+# Si instalaste desde PyPI
+from opensees_parametric_analysis import ParametricRunner
+
+# Si usas código fuente  
 from src.parametric_runner import ParametricRunner
 
 # Configurar estudio

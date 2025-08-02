@@ -203,7 +203,6 @@ Este proyecto está bajo licencia Apache 2.0. Ver archivo LICENSE para más deta
 Para preguntas, soporte o contribuciones:
 - **Issues**: [GitHub Issues](https://github.com/GJoe2/opensees-parametric-analysis/issues)
 - **Documentación**: [docs/](docs/)
-- **Email**: Contactar al desarrollador principal
 
 ---
 

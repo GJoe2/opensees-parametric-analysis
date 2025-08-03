@@ -27,6 +27,7 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
+        # Basic dependencies for openseespy
         sudo apt-get install -y \
           libopenblas-dev \
           liblapack-dev \
@@ -34,6 +35,14 @@ jobs:
           gfortran \
           libffi-dev \
           libssl-dev
+        # Graphics dependencies for opstool in headless environment
+        sudo apt-get install -y \
+          libglu1-mesa-dev \
+          freeglut3-dev \
+          mesa-common-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa \
+          xvfb
     
     - name: Install Python dependencies
       run: |
@@ -49,6 +58,10 @@ jobs:
     
     - name: Run tests
       run: |
+        # Set up virtual display for headless OpenGL (GitHub Actions = Linux Server)
+        export DISPLAY=:99.0
+        Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+        sleep 3
         pytest tests/ -v --cov=src --cov-report=xml
     
     - name: Upload coverage to Codecov

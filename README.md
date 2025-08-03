@@ -32,13 +32,20 @@ pip install opensees-parametric-analysis
 git clone https://github.com/GJoe2/opensees-parametric-analysis.git
 cd opensees-parametric-analysis
 pip install -r requirements.txt
+
+# Opción 3: Instalación automática en Linux (detecta entorno)
+curl -fsSL https://raw.githubusercontent.com/GJoe2/opensees-parametric-analysis/master/scripts/install.sh | bash
 ```
 
 **Requisitos:** 
 - Python 3.12+ (requerido por openseespy y opstool)
-- **Linux únicamente**: Dependencias del sistema requeridas
+- **Linux Desktop**: Dependencias básicas
   ```bash
   sudo apt-get install -y libopenblas-dev liblapack-dev libblas-dev gfortran
+  ```
+- **Linux Server**: Dependencias básicas + gráficas para headless
+  ```bash
+  sudo apt-get install -y libopenblas-dev liblapack-dev libblas-dev gfortran libglu1-mesa-dev xvfb
   ```
 
 📋 **Instalación completa**: Ver [requisitos del sistema](docs/system-requirements.md)

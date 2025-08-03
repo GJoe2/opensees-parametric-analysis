@@ -31,7 +31,13 @@ jobs:
           libblas-dev \
           gfortran \
           libffi-dev \
-          libssl-dev
+          libssl-dev \
+          libglu1-mesa-dev \
+          freeglut3-dev \
+          mesa-common-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa \
+          xvfb
     
     - name: Install dependencies
       run: |
@@ -40,6 +46,10 @@ jobs:
     
     - name: Run tests
       run: |
+        # Set up virtual display for headless OpenGL
+        export DISPLAY=:99.0
+        Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+        sleep 3
         pytest tests/ -v --cov=src --cov-report=xml
     
     - name: Upload coverage to Codecov
@@ -69,7 +79,13 @@ jobs:
           libblas-dev \
           gfortran \
           libffi-dev \
-          libssl-dev
+          libssl-dev \
+          libglu1-mesa-dev \
+          freeglut3-dev \
+          mesa-common-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa \
+          xvfb
     
     - name: Install build dependencies
       run: |

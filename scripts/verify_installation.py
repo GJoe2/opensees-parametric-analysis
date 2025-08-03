@@ -41,7 +41,7 @@ def test_imports():
         print("\n💡 Posibles soluciones:")
         print("   1. Verificar que Python >= 3.12")
         print("   2. En Linux: instalar dependencias del sistema")
-        print("      sudo apt-get install -y libopenblas-dev liblapack-dev libblas-dev gfortran")
+        print("      sudo apt-get install -y libopenblas-dev liblapack-dev libblas-dev gfortran libglu1-mesa-dev")
         print("   3. Reinstalar: pip install --force-reinstall opensees-parametric-analysis")
         return False
     except Exception as e:

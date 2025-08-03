@@ -11,6 +11,15 @@ y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Preparación para release inicial en PyPI
 - Configuración de GitHub Actions para CI/CD
 - Documentación completa del proyecto
+- Distinción entre Linux Desktop y Linux Server
+- Script de instalación automática que detecta entorno
+- Instalación optimizada según tipo de sistema
+
+### Technical Details
+- **Linux Desktop**: Solo dependencias básicas (openseespy)
+- **Linux Server**: Dependencias básicas + gráficas para headless (opstool)
+- **GitHub Actions**: Configurado como Linux Server (Ubuntu 24.04)
+- **Script instalador**: Detección automática de entorno y distribución
 
 ## [1.0.0] - 2025-08-02
 

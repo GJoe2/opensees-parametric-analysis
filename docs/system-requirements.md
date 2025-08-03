@@ -13,6 +13,25 @@
 
 ## 📦 Instalación por Sistema Operativo
 
+### 🚀 Instalación Automática (Recomendada)
+
+```bash
+# Descargar e ejecutar instalador automático
+curl -fsSL https://raw.githubusercontent.com/GJoe2/opensees-parametric-analysis/master/scripts/install.sh | bash
+
+# O desde código fuente
+curl -fsSL https://raw.githubusercontent.com/GJoe2/opensees-parametric-analysis/master/scripts/install.sh | bash -s -- --source
+```
+
+El instalador automático:
+- ✅ Detecta tu distribución Linux (Ubuntu, Debian, CentOS, Fedora)
+- ✅ Detecta si es Desktop o Server (headless)
+- ✅ Instala solo las dependencias necesarias
+- ✅ Configura el entorno apropiado
+- ✅ Verifica la instalación
+
+### 📋 Instalación Manual
+
 ### Windows
 
 ```powershell
@@ -27,8 +46,9 @@ pip install -r requirements.txt
 
 ### Ubuntu/Debian
 
+#### Linux Desktop (con interfaz gráfica)
 ```bash
-# 1. Instalar dependencias del sistema (REQUERIDO)
+# 1. Dependencias básicas (REQUERIDO)
 sudo apt-get update
 sudo apt-get install -y \
     libopenblas-dev \
@@ -48,17 +68,55 @@ cd opensees-parametric-analysis
 pip install -r requirements.txt
 ```
 
+#### Linux Server (sin interfaz gráfica)
+```bash
+# 1. Dependencias básicas + gráficas para headless (REQUERIDO)
+sudo apt-get update
+sudo apt-get install -y \
+    libopenblas-dev \
+    liblapack-dev \
+    libblas-dev \
+    gfortran \
+    libffi-dev \
+    libssl-dev \
+    libglu1-mesa-dev \
+    freeglut3-dev \
+    mesa-common-dev \
+    libgl1-mesa-dev \
+    libglu1-mesa \
+    xvfb
+
+# 2. Instalar el paquete Python
+pip install opensees-parametric-analysis
+
+# 3. Para ejecutar (configurar display virtual)
+export DISPLAY=:99.0
+Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+sleep 3
+# Ahora puedes ejecutar tu código Python
+```
+
 ### Red Hat/CentOS/Fedora
 
+#### Desktop
 ```bash
-# 1. Instalar dependencias del sistema
 # Para RHEL/CentOS:
 sudo yum install -y openblas-devel lapack-devel blas-devel gcc-gfortran libffi-devel openssl-devel
 
 # Para Fedora:
 sudo dnf install -y openblas-devel lapack-devel blas-devel gcc-gfortran libffi-devel openssl-devel
 
-# 2. Instalar el paquete Python
+pip install opensees-parametric-analysis
+```
+
+#### Server (headless)
+```bash
+# Para RHEL/CentOS:
+sudo yum install -y openblas-devel lapack-devel blas-devel gcc-gfortran libffi-devel openssl-devel mesa-libGLU-devel freeglut-devel mesa-libGL-devel xorg-x11-server-Xvfb
+
+# Para Fedora:
+sudo dnf install -y openblas-devel lapack-devel blas-devel gcc-gfortran libffi-devel openssl-devel mesa-libGLU-devel freeglut-devel mesa-libGL-devel xorg-x11-server-Xvfb
+
 pip install opensees-parametric-analysis
 ```
 
@@ -76,6 +134,20 @@ pip install opensees-parametric-analysis
 ```
 
 ## ⚠️ Problemas Comunes
+
+### Error: `libGLU.so.1: cannot open shared object file`
+
+**Síntoma**: Error de importación de opstool en Linux
+```
+OSError: libGLU.so.1: cannot open shared object file: No such file or directory
+```
+
+**Causa**: Faltan bibliotecas gráficas OpenGL/GLU necesarias para opstool
+
+**Solución**: Instalar dependencias gráficas del sistema
+```bash
+sudo apt-get install -y libglu1-mesa-dev freeglut3-dev mesa-common-dev libgl1-mesa-dev libglu1-mesa
+```
 
 ### Error: `libblas.so.3: cannot open shared object file`
 
@@ -103,8 +175,52 @@ python --version  # Debe ser >= 3.12
 pip uninstall openseespy
 pip install openseespy>=3.4.0
 
-# En Linux, asegurar dependencias del sistema
+# En Linux, asegurar dependencias del sistema (álgebra lineal)
 sudo apt-get install -y libopenblas-dev liblapack-dev libblas-dev
+
+# En Linux, asegurar dependencias gráficas (para opstool)
+sudo apt-get install -y libglu1-mesa-dev freeglut3-dev mesa-common-dev
+```
+
+### Error: Display/Graphics en servidores sin GUI
+
+**Síntoma**: Errores relacionados con display o gráficos en servidores Linux
+```
+Cannot connect to X server
+No display available
+```
+
+**Causa**: opstool requiere capacidades gráficas que no están disponibles en servidores headless
+
+**Solución**: Usar display virtual (Xvfb)
+```bash
+# Instalar Xvfb
+sudo apt-get install -y xvfb
+
+# Ejecutar con display virtual
+export DISPLAY=:99.0
+Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+python tu_script.py
+```
+
+## 🧪 Testing en Diferentes Entornos
+
+### Entorno Local (con GUI)
+```bash
+python verify_installation.py
+pytest tests/ -v
+```
+
+### Servidor/CI (headless)
+```bash
+# Setup display virtual
+export DISPLAY=:99.0
+Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+sleep 3
+
+# Ejecutar tests
+python verify_installation.py
+pytest tests/ -v
 ```
 
 ## 🧪 Verificar Instalación
@@ -218,12 +334,21 @@ python verify_installation.py
 - tqdm >= 4.62.0
 
 ### Dependencias del Sistema (Linux)
-- libopenblas-dev - Álgebra lineal optimizada
-- liblapack-dev - Rutinas de álgebra lineal
-- libblas-dev - Operaciones básicas de álgebra lineal
-- gfortran - Compilador Fortran (para extensiones)
-- libffi-dev - Interface de funciones foráneas
-- libssl-dev - Biblioteca SSL/TLS
+- **Álgebra lineal** (siempre requeridas):
+  - libopenblas-dev - Álgebra lineal optimizada
+  - liblapack-dev - Rutinas de álgebra lineal
+  - libblas-dev - Operaciones básicas de álgebra lineal
+- **Compilación** (siempre requeridas):
+  - gfortran - Compilador Fortran (para extensiones)
+  - libffi-dev - Interface de funciones foráneas
+  - libssl-dev - Biblioteca SSL/TLS
+- **Gráficos/OpenGL** (solo para servidores headless):
+  - libglu1-mesa-dev - OpenGL Utility Library
+  - freeglut3-dev - GLUT (OpenGL Utility Toolkit)
+  - mesa-common-dev - Mesa 3D graphics library
+  - libgl1-mesa-dev - Mesa OpenGL development
+  - libglu1-mesa - GLU runtime library
+  - xvfb - Virtual framebuffer X server
 
 ## 🆘 Obtener Ayuda
 

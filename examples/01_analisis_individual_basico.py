@@ -34,7 +34,7 @@ def main():
         B=B, 
         nx=nx, 
         ny=ny,
-        model_name="ejemplo_01_basico"
+        model_name="ejemplo_01"
     )
     
     print(f"Modelo creado: {model_info['name']}")

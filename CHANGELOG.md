@@ -14,6 +14,11 @@ y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Distinción entre Linux Desktop y Linux Server
 - Script de instalación automática que detecta entorno
 - Instalación optimizada según tipo de sistema
+- Dependencia seaborn para visualizaciones mejoradas
+
+### Fixed
+- Error de importación de seaborn en report_generator
+- Problemas de dependencias en tests de CI/CD
 
 ### Technical Details
 - **Linux Desktop**: Solo dependencias básicas (openseespy)

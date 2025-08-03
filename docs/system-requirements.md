@@ -329,6 +329,7 @@ python verify_installation.py
 - pandas >= 1.3.0
 - matplotlib >= 3.5.0
 - plotly >= 5.0.0
+- seaborn >= 0.11.0
 - jupyter >= 1.0.0
 - ipywidgets >= 7.6.0
 - tqdm >= 4.62.0

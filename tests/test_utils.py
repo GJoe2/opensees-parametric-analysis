@@ -289,7 +289,7 @@ class TestGlobalConvenienceFunctions(unittest.TestCase):
             1.8, 12.0, 5, 3
         )
     
-    @patch('src.model_builder.ModelBuilder')
+    @patch('src.utils.model_helpers.ModelBuilder')
     def test_create_model_helpers_function(self, mock_model_builder_class):
         """Test de función create_model_helpers."""
         # Configurar mock
@@ -306,7 +306,7 @@ class TestGlobalConvenienceFunctions(unittest.TestCase):
         self.assertIsInstance(helpers, ModelBuilderHelpers)
         self.assertEqual(helpers.builder, mock_builder_instance)
     
-    @patch('src.model_builder.ModelBuilder')
+    @patch('src.utils.model_helpers.ModelBuilder')
     def test_create_model_helpers_default_dir(self, mock_model_builder_class):
         """Test de create_model_helpers con directorio por defecto."""
         mock_builder_instance = MagicMock()

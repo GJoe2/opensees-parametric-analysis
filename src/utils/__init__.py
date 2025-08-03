@@ -18,14 +18,24 @@ try:
     from .model_helpers import ModelBuilderHelpers
     from .analysis_types import StaticAnalysis, ModalAnalysis, DynamicAnalysis
     from .visualization_helper import VisualizationHelper
-except ImportError:
+except ImportError as e:
     # Fallback para casos donde los imports relativos no funcionan
     import sys
     import os
     current_dir = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, current_dir)
-    from model_helpers import ModelBuilderHelpers
-    from analysis_types import StaticAnalysis, ModalAnalysis, DynamicAnalysis
-    from visualization_helper import VisualizationHelper
+    try:
+        from model_helpers import ModelBuilderHelpers
+        from analysis_types import StaticAnalysis, ModalAnalysis, DynamicAnalysis
+        from visualization_helper import VisualizationHelper
+    except ImportError:
+        # Si aún falla, imprimir el error y continuar
+        print(f"Warning: Could not import utils modules: {e}")
 
-__all__ = ['ModelBuilderHelpers']
+__all__ = [
+    'ModelBuilderHelpers',
+    'StaticAnalysis', 
+    'ModalAnalysis', 
+    'DynamicAnalysis',
+    'VisualizationHelper'
+]

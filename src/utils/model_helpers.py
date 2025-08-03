@@ -62,7 +62,11 @@ class ModelBuilderHelpers:
         Returns:
             Diccionario con información del modelo creado
         """
-        viz_config = {'enabled': visualize, 'static_deformed': visualize} if visualize else {}
+        viz_config = {
+            'enabled': visualize,
+            'static_deformed': visualize
+        } if visualize else {'enabled': False}
+        
         return self.builder.create_model(
             L_B_ratio, B, nx, ny, model_name,
             enabled_analyses=['static'],
@@ -90,7 +94,11 @@ class ModelBuilderHelpers:
         Returns:
             Diccionario con información del modelo creado
         """
-        viz_config = {'enabled': visualize, 'modal_shapes': visualize} if visualize else {}
+        viz_config = {
+            'enabled': visualize,
+            'modal_shapes': visualize
+        } if visualize else {'enabled': False}
+        
         return self.builder.create_model(
             L_B_ratio, B, nx, ny, model_name,
             enabled_analyses=['modal'],
@@ -101,7 +109,8 @@ class ModelBuilderHelpers:
         )
     
     def create_dynamic_model(self, L_B_ratio: float, B: float, nx: int, ny: int, 
-                           model_name: str = None, dt: float = 0.01, num_steps: int = 1000,
+                           model_name: str = None, dt: float = 0.01, 
+                           num_steps: int = None, total_time: float = None,
                            visualize: bool = False) -> Dict:
         """
         Método de conveniencia para crear modelo con análisis estático y dinámico.
@@ -113,20 +122,37 @@ class ModelBuilderHelpers:
             ny: Número de ejes en dirección Y
             model_name: Nombre del modelo (opcional)
             dt: Paso de tiempo para análisis dinámico
-            num_steps: Número de pasos para análisis dinámico
+            num_steps: Número de pasos para análisis dinámico (alternativa a total_time)
+            total_time: Tiempo total de análisis (alternativa a num_steps)
             visualize: Si habilitar visualización de deformada estática
             
         Returns:
             Diccionario con información del modelo creado
         """
-        viz_config = {'enabled': visualize, 'static_deformed': visualize} if visualize else {}
+        # Calcular num_steps si se proporciona total_time
+        if total_time is not None and num_steps is None:
+            num_steps = int(total_time / dt)
+        elif num_steps is None:
+            num_steps = 1000  # Valor por defecto
+            
+        viz_config = {
+            'enabled': visualize,
+            'static_deformed': visualize
+        } if visualize else {'enabled': False}
+        
+        analysis_params = {
+            'dynamic': {'dt': dt, 'num_steps': num_steps},
+            'visualization': viz_config
+        }
+        
+        # Agregar total_time si se especificó para compatibilidad
+        if total_time is not None:
+            analysis_params['dynamic']['total_time'] = total_time
+            
         return self.builder.create_model(
             L_B_ratio, B, nx, ny, model_name,
             enabled_analyses=['static', 'dynamic'],
-            analysis_params={
-                'dynamic': {'dt': dt, 'num_steps': num_steps},
-                'visualization': viz_config
-            }
+            analysis_params=analysis_params
         )
     
     def create_complete_model(self, L_B_ratio: float, B: float, nx: int, ny: int, 
@@ -257,6 +283,12 @@ class ModelBuilderHelpers:
                 'visualization': {'enabled': False}
             }
         )
+    
+    # Alias para compatibilidad con tests
+    def create_quick_prototype(self, L_B_ratio: float, B: float, nx: int = 2, ny: int = 2,
+                              model_name: str = None) -> Dict:
+        """Alias para create_quick_test_model para compatibilidad con tests."""
+        return self.create_quick_test_model(L_B_ratio, B, nx, ny, model_name)
 
 
 # Función de conveniencia para crear helpers

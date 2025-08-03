@@ -15,6 +15,10 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.parametric_runner import ParametricRunner
+from src.model_builder import ModelBuilder
+from src.analysis_engine import AnalysisEngine
+from src.report_generator import ReportGenerator
+from src.python_exporter import PythonExporter
 
 
 class TestParametricRunner(unittest.TestCase):
@@ -28,10 +32,18 @@ class TestParametricRunner(unittest.TestCase):
         os.makedirs(self.results_dir)
         os.makedirs(self.output_dir)
         
-        # Crear runner
+        # Crear mocks para dependencias
+        self.mock_builder = MagicMock(spec=ModelBuilder)
+        self.mock_engine = MagicMock(spec=AnalysisEngine)
+        self.mock_reporter = MagicMock(spec=ReportGenerator)
+        self.mock_exporter = MagicMock(spec=PythonExporter)
+        
+        # Crear runner con las dependencias correctas
         self.runner = ParametricRunner(
-            results_dir=self.results_dir,
-            output_dir=self.output_dir
+            model_builder=self.mock_builder,
+            analysis_engine=self.mock_engine,
+            report_generator=self.mock_reporter,
+            python_exporter=self.mock_exporter
         )
         
         # Datos de parámetros de prueba
@@ -60,17 +72,29 @@ class TestParametricRunner(unittest.TestCase):
     
     def test_initialization(self):
         """Test de inicialización del runner."""
-        self.assertEqual(self.runner.results_dir, self.results_dir)
-        self.assertEqual(self.runner.output_dir, self.output_dir)
-        self.assertTrue(os.path.exists(self.results_dir))
-        self.assertTrue(os.path.exists(self.output_dir))
+        self.assertEqual(self.runner.builder, self.mock_builder)
+        self.assertEqual(self.runner.engine, self.mock_engine)
+        self.assertEqual(self.runner.reporter, self.mock_reporter)
+        self.assertEqual(self.runner.exporter, self.mock_exporter)
+        self.assertIsNotNone(self.runner.helpers)
     
     def test_initialization_with_defaults(self):
         """Test de inicialización con valores por defecto."""
-        runner = ParametricRunner()
+        # Crear instancias reales para este test
+        real_builder = ModelBuilder()
+        real_engine = AnalysisEngine()
+        real_reporter = ReportGenerator()
+        real_exporter = PythonExporter()
         
-        self.assertEqual(runner.results_dir, "results")
-        self.assertEqual(runner.output_dir, "parametric_output")
+        runner = ParametricRunner(
+            model_builder=real_builder,
+            analysis_engine=real_engine,
+            report_generator=real_reporter,
+            python_exporter=real_exporter
+        )
+        
+        self.assertEqual(runner.builder, real_builder)
+        self.assertEqual(runner.engine, real_engine)
     
     def test_generate_parameter_combinations(self):
         """Test de generación de combinaciones de parámetros."""

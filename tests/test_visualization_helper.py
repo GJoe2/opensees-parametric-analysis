@@ -157,26 +157,26 @@ class TestVisualizationHelper(unittest.TestCase):
         # Verificar que falló correctamente
         self.assertFalse(result)
     
-    @patch('opstool.post.CreateModeShapeODB')
-    def test_create_modal_odb_if_needed_success(self, mock_create_modal_odb):
+    @patch('opstool.post.CreateODB')
+    def test_create_modal_odb_if_needed_success(self, mock_create_odb):
         """Test de creación exitosa de ODB modal."""
         mock_modal_odb = MagicMock()
-        mock_create_modal_odb.return_value = mock_modal_odb
+        mock_create_odb.return_value = mock_modal_odb
         
         # Crear ODB modal
         result = self.viz_helper.create_modal_odb_if_needed()
         
         # Verificar resultado
         self.assertTrue(result)
-        mock_create_modal_odb.assert_called_once_with(
+        mock_create_odb.assert_called_once_with(
             odb_tag=1,
-            mode_tags="all"
+            project_gauss_to_nodes="extrapolate"
         )
     
-    @patch('opstool.post.CreateModeShapeODB')
-    def test_create_modal_odb_if_needed_failure(self, mock_create_modal_odb):
+    @patch('opstool.post.CreateODB')
+    def test_create_modal_odb_if_needed_failure(self, mock_create_odb):
         """Test de manejo de errores al crear ODB modal."""
-        mock_create_modal_odb.side_effect = Exception("Modal ODB creation failed")
+        mock_create_odb.side_effect = Exception("Modal ODB creation failed")
         
         # Intentar crear ODB modal
         result = self.viz_helper.create_modal_odb_if_needed()
@@ -194,7 +194,7 @@ class TestVisualizationHelper(unittest.TestCase):
         self.assertFalse(result)
     
     @patch('os.path.exists')
-    @patch('opstool.vis.plotly.deformed_shape')
+    @patch('opstool.vis.plotly.deform_vis')
     def test_generate_static_deformed_plot_success(self, mock_deformed_shape, mock_exists):
         """Test de generación exitosa de gráfico deformado."""
         mock_exists.return_value = True
@@ -214,7 +214,7 @@ class TestVisualizationHelper(unittest.TestCase):
         mock_fig.write_html.assert_called_once()
     
     @patch('os.path.exists')
-    @patch('opstool.vis.plotly.deformed_shape')
+    @patch('opstool.vis.plotly.deform_vis')
     def test_generate_static_deformed_plot_failure(self, mock_deformed_shape, mock_exists):
         """Test de manejo de errores al generar gráfico deformado."""
         mock_exists.return_value = True
@@ -240,7 +240,7 @@ class TestVisualizationHelper(unittest.TestCase):
         self.assertFalse(result)
     
     @patch('os.path.exists')
-    @patch('opstool.vis.plotly.mode_shape')
+    @patch('opstool.vis.plotly.mode_vis')
     def test_generate_mode_shapes_plot_success(self, mock_mode_shape, mock_exists):
         """Test de generación exitosa de gráfico de formas modales."""
         mock_exists.return_value = True

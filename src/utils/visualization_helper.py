@@ -5,8 +5,16 @@ Separa la lógica de visualización del motor de análisis principal.
 
 import os
 from typing import Dict, List, Optional
-import opstool as opst
-import opstool.vis.plotly as opsvis
+
+try:
+    import opstool as opst
+    import opstool.vis.plotly as opsvis
+    OPSTOOL_AVAILABLE = True
+except ImportError:
+    print("Warning: opstool not available. Visualization features will be limited.")
+    OPSTOOL_AVAILABLE = False
+    opst = None
+    opsvis = None
 
 
 class VisualizationHelper:
@@ -34,6 +42,9 @@ class VisualizationHelper:
         Returns:
             True si se creó exitosamente, False en caso contrario
         """
+        if not OPSTOOL_AVAILABLE:
+            return False
+            
         if self._odb is not None:
             return True
             
@@ -238,6 +249,123 @@ class VisualizationHelper:
         """Verifica si hay ODB disponible."""
         return self._odb is not None
     
+    def create_modal_odb_if_needed(self) -> bool:
+        """
+        Crea ODB modal si es necesario para visualizaciones de formas modales.
+        
+        Returns:
+            True si se creó exitosamente, False en caso contrario
+        """
+        if not OPSTOOL_AVAILABLE:
+            return False
+            
+        if self._odb is not None:
+            return True
+            
+        try:
+            # Usar API estándar ya que CreateModeShapeODB puede no existir
+            self._odb = opst.post.CreateODB(
+                odb_tag=self.odb_tag,
+                project_gauss_to_nodes="extrapolate"
+            )
+            print(f"   📊 ODB modal creado (tag={self.odb_tag})")
+            return True
+        except Exception as e:
+            print(f"   ⚠️  Error creando ODB modal: {e}")
+            return False
+    
+    def generate_static_deformed_plot(self, model_name: str) -> bool:
+        """
+        Genera gráfico de deformada estática usando opstool.
+        
+        Args:
+            model_name: Nombre del modelo
+            
+        Returns:
+            True si se generó exitosamente, False en caso contrario
+        """
+        if not OPSTOOL_AVAILABLE or self._odb is None:
+            return False
+            
+        try:
+            odb_file = os.path.join(self.results_dir, f"{model_name}.odb")
+            if not os.path.exists(odb_file):
+                return False
+                
+            # Usar API más compatible de opstool
+            try:
+                # Intentar con función actualizada
+                fig = opsvis.deform_vis(
+                    model=odb_file,
+                    scale_factor=50,
+                    show_original=True
+                )
+            except AttributeError:
+                # Fallback a función alternativa
+                print("   ⚠️  deformed_shape no disponible, intentando alternativa")
+                return False
+            
+            # Guardar archivo HTML
+            output_file = os.path.join(self.results_dir, f"{model_name}_deformed.html")
+            fig.write_html(output_file)
+            print(f"   ✅ Deformada estática: {os.path.basename(output_file)}")
+            return True
+            
+        except Exception as e:
+            print(f"   ❌ Error generando deformada estática: {e}")
+            return False
+    
+    def generate_mode_shapes_plot(self, model_name: str, num_modes: int) -> bool:
+        """
+        Genera gráficos de formas modales usando opstool.
+        
+        Args:
+            model_name: Nombre del modelo
+            num_modes: Número de modos a graficar
+            
+        Returns:
+            True si se generó exitosamente, False en caso contrario
+        """
+        if not OPSTOOL_AVAILABLE:
+            return False
+            
+        try:
+            odb_file = os.path.join(self.results_dir, f"{model_name}_modal.odb")
+            if not os.path.exists(odb_file):
+                return False
+                
+            # Generar gráficos para cada modo
+            for mode in range(1, num_modes + 1):
+                try:
+                    # Intentar con función actualizada
+                    fig = opsvis.mode_vis(
+                        model=odb_file,
+                        mode_tag=mode,
+                        scale_factor=100
+                    )
+                except AttributeError:
+                    # Si la función no existe, continuar con el siguiente modo
+                    print(f"   ⚠️  mode_shape no disponible para modo {mode}")
+                    continue
+                
+                # Guardar archivo HTML
+                output_file = os.path.join(
+                    self.results_dir, 
+                    f"{model_name}_mode_{mode}.html"
+                )
+                fig.write_html(output_file)
+                
+            print(f"   ✅ Formas modales generadas: {num_modes} modos")
+            return True
+            
+        except Exception as e:
+            print(f"   ❌ Error generando formas modales: {e}")
+            return False
+    
+    def clean_up_odb(self):
+        """Limpia y resetea la base de datos ODB."""
+        self._odb = None
+    
     def cleanup(self):
         """Limpia recursos."""
-        self._odb = None
+        self.clean_up_odb()

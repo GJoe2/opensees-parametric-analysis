@@ -374,3 +374,211 @@ class ParametricRunner:
             return self.helpers.create_dynamic_model(L_B_ratio, B, nx, ny)
         else:  # complete
             return self.helpers.create_complete_model(L_B_ratio, B, nx, ny)
+    
+    # Métodos de compatibilidad con tests existentes
+    def generate_parameter_combinations(self, parameters: Dict) -> List[Dict]:
+        """
+        Genera todas las combinaciones posibles de parámetros.
+        
+        Args:
+            parameters: Diccionario con listas de valores para cada parámetro
+            
+        Returns:
+            Lista de diccionarios con combinaciones de parámetros
+        """
+        import itertools
+        
+        # Extraer nombres y valores de parámetros
+        param_names = list(parameters.keys())
+        param_values = list(parameters.values())
+        
+        # Generar combinaciones cartesianas
+        combinations = []
+        for combo in itertools.product(*param_values):
+            combinations.append(dict(zip(param_names, combo)))
+            
+        return combinations
+    
+    def create_model_name(self, params: Dict, prefix: str = "model") -> str:
+        """
+        Crea nombre de modelo basado en parámetros.
+        
+        Args:
+            params: Diccionario de parámetros
+            prefix: Prefijo para el nombre
+            
+        Returns:
+            Nombre del modelo
+        """
+        # Crear nombre basado en parámetros clave
+        param_str = "_".join([
+            str(params.get('L_B_ratio', '')).replace('.', '_'),
+            str(params.get('B', '')).replace('.', '_'),
+            str(params.get('nx', '')),
+            str(params.get('ny', ''))
+        ])
+        return f"{prefix}_{param_str}"
+    
+    def run_single_model(self, params: Dict) -> Dict:
+        """
+        Ejecuta análisis de un modelo individual.
+        
+        Args:
+            params: Parámetros del modelo
+            
+        Returns:
+            Resultados del análisis
+        """
+        try:
+            # Crear modelo
+            model_name = self.create_model_name(params)
+            model = self.builder.create_model(
+                params['L_B_ratio'],
+                params['B'],
+                params['nx'],
+                params['ny'],
+                model_name
+            )
+            
+            # Ejecutar análisis
+            if model['success']:
+                results = self.engine.analyze_model(model['file_path'])
+                return {
+                    'model_name': model_name,
+                    'success': True,
+                    'results': results
+                }
+            else:
+                return {
+                    'model_name': model_name,
+                    'success': False,
+                    'error': 'Model creation failed'
+                }
+                
+        except Exception as e:
+            return {
+                'model_name': params.get('model_name', 'unknown'),
+                'success': False,
+                'error': str(e)
+            }
+    
+    def run_parametric_study(self, parameters: Dict, max_models: int = None) -> Dict:
+        """
+        Ejecuta estudio paramétrico completo.
+        
+        Args:
+            parameters: Diccionario de parámetros
+            max_models: Máximo número de modelos a procesar
+            
+        Returns:
+            Resumen del estudio
+        """
+        combinations = self.generate_parameter_combinations(parameters)
+        
+        if max_models:
+            combinations = combinations[:max_models]
+        
+        results = []
+        successful = 0
+        
+        for combo in combinations:
+            result = self.run_single_model(combo)
+            results.append(result)
+            if result['success']:
+                successful += 1
+        
+        return {
+            'total_models': len(combinations),
+            'successful_models': successful,
+            'success_rate': successful / len(combinations) if combinations else 0,
+            'results': results
+        }
+    
+    def create_results_dataframe(self, results_data: List[Dict]):
+        """
+        Crea DataFrame de pandas con resultados.
+        
+        Args:
+            results_data: Lista de resultados
+            
+        Returns:
+            DataFrame con resultados
+        """
+        try:
+            import pandas as pd
+            return pd.DataFrame(results_data)
+        except ImportError:
+            print("Warning: pandas not available")
+            return None
+    
+    def save_results_summary(self, summary: Dict, study_name: str) -> str:
+        """
+        Guarda resumen de resultados.
+        
+        Args:
+            summary: Resumen del estudio
+            study_name: Nombre del estudio
+            
+        Returns:
+            Ruta del archivo guardado
+        """
+        import json
+        
+        file_path = f"results/{study_name}_summary.json"
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        with open(file_path, 'w') as f:
+            json.dump(summary, f, indent=2)
+            
+        return file_path
+    
+    def save_results_dataframe(self, df, study_name: str) -> str:
+        """
+        Guarda DataFrame como CSV.
+        
+        Args:
+            df: DataFrame a guardar
+            study_name: Nombre del estudio
+            
+        Returns:
+            Ruta del archivo guardado
+        """
+        file_path = f"results/{study_name}_results.csv"
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        if df is not None:
+            df.to_csv(file_path, index=False)
+            
+        return file_path
+    
+    def filter_successful_results(self, results_data: List[Dict]) -> List[Dict]:
+        """
+        Filtra solo resultados exitosos.
+        
+        Args:
+            results_data: Lista de resultados
+            
+        Returns:
+            Lista filtrada de resultados exitosos
+        """
+        return [r for r in results_data if r.get('success', False)]
+    
+    def calculate_study_statistics(self, results_data: List[Dict]) -> Dict:
+        """
+        Calcula estadísticas del estudio.
+        
+        Args:
+            results_data: Lista de resultados
+            
+        Returns:
+            Diccionario con estadísticas
+        """
+        total = len(results_data)
+        successful = len(self.filter_successful_results(results_data))
+        
+        return {
+            'total_models': total,
+            'successful_models': successful,
+            'failed_models': total - successful,
+            'success_rate': successful / total if total > 0 else 0
+        }

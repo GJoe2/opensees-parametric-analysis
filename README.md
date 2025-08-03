@@ -34,7 +34,14 @@ cd opensees-parametric-analysis
 pip install -r requirements.txt
 ```
 
-**Requisitos:** Python 3.12+ (requerido por openseespy y opstool)
+**Requisitos:** 
+- Python 3.12+ (requerido por openseespy y opstool)
+- **Linux únicamente**: Dependencias del sistema requeridas
+  ```bash
+  sudo apt-get install -y libopenblas-dev liblapack-dev libblas-dev gfortran
+  ```
+
+📋 **Instalación completa**: Ver [requisitos del sistema](docs/system-requirements.md)
 
 ### Uso Básico
 ```python
@@ -185,6 +192,7 @@ Para información completa y detallada, consulte la documentación organizada en
 | Tema | Documento | Descripción |
 |------|-----------|-------------|
 | **Instalación** | [installation.md](docs/installation.md) | Setup, dependencias, configuración |
+| **Requisitos** | [system-requirements.md](docs/system-requirements.md) | Requisitos del sistema y troubleshooting |
 | **Uso Básico** | [usage.md](docs/usage.md) | API, ejemplos, casos de uso |
 | **Arquitectura** | [architecture.md](docs/architecture.md) | Diseño, componentes, extensibilidad |
 | **Parámetros** | [model-parameters.md](docs/model-parameters.md) | Configuración del modelo, nomenclatura |

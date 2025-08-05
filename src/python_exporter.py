@@ -81,8 +81,16 @@ class PythonExporter:
     def _generate_model_code(self, model_info: Dict) -> List[str]:
         """Genera el código Python para la función build_model()."""
         params = model_info['parameters']
-        sections = model_info['sections']
-        elements = model_info['elements']
+        sections = model_info.get('sections', {})
+        elements = model_info.get('elements', {})
+        
+        # Valores por defecto para parámetros que podrían faltar
+        E = params.get('E', 2.1e11)  # Concreto típico
+        nu = params.get('nu', 0.3)   # Coeficiente de Poisson típico
+        slab_thickness = params.get('slab_thickness', 0.15)  # 15 cm
+        rho = params.get('rho', 2400)  # Densidad del concreto
+        column_size = params.get('column_size', [0.3, 0.3])  # 30x30 cm
+        beam_size = params.get('beam_size', [0.3, 0.5])  # 30x50 cm
         
         code = [
             "import openseespy.opensees as ops",
@@ -96,16 +104,17 @@ class PythonExporter:
             "    # Parámetros del modelo",
             f"    L, B = {params['L']}, {params['B']}  # Dimensiones",
             f"    nx, ny = {params['nx']}, {params['ny']}  # Ejes",
-            f"    E = {params['E']}  # Módulo de elasticidad",
-            f"    nu = {params['nu']}  # Coeficiente de Poisson",
-            f"    thickness = {params['slab_thickness']}  # Espesor de losa",
-            f"    rho = {params['rho']}  # Densidad",
+            f"    E = {E}  # Módulo de elasticidad",
+            f"    nu = {nu}  # Coeficiente de Poisson",
+            f"    thickness = {slab_thickness}  # Espesor de losa",
+            f"    rho = {rho}  # Densidad",
             "",
             "    # Crear nodos",
         ]
         
         L, B, nx, ny = params['L'], params['B'], params['nx'], params['ny']
-        dz, num_floors = params['floor_height'], params['num_floors']
+        dz = params.get('floor_height', 3.0)  # Altura por defecto de 3m
+        num_floors = params.get('num_floors', 1)  # Un piso por defecto
         dx, dy = L / nx, B / ny
         
         node_id = 1
@@ -122,7 +131,7 @@ class PythonExporter:
             "", "    # Crear materiales y secciones",
             "    ops.section('ElasticMembranePlateSection', 1, E, nu, thickness, rho)",
             "", "    # Columnas",
-            f"    col_w, col_h = {params['column_size'][0]}, {params['column_size'][1]}",
+            f"    col_w, col_h = {column_size[0]}, {column_size[1]}",
             "    A_col = col_w * col_h",
             "    Iz_col = col_w * col_h**3 / 12",
             "    Iy_col = col_h * col_w**3 / 12",
@@ -132,7 +141,7 @@ class PythonExporter:
             "    J_col = a_col * b_col**3 * (1/3 - 0.21 * (b_col/a_col) * (1 - (b_col**4)/(12*a_col**4)))",
             "    ops.section('Elastic', 2, E, A_col, Iz_col, Iy_col, G, J_col)",
             "", "    # Vigas",
-            f"    beam_w, beam_h = {params['beam_size'][0]}, {params['beam_size'][1]}",
+            f"    beam_w, beam_h = {beam_size[0]}, {beam_size[1]}",
             "    A_beam = beam_w * beam_h",
             "    Iz_beam = beam_w * beam_h**3 / 12",
             "    Iy_beam = beam_h * beam_w**3 / 12",
@@ -146,17 +155,24 @@ class PythonExporter:
         ])
         
         code.append("    # Crear elementos")
-        for elem_id, elem in elements.items():
-            nodes = elem['nodes']
-            if elem['type'] == 'slab':
-                sec_tag = elem['section_tag']
-                code.append(f"    ops.element('ShellMITC4', {elem_id}, *{nodes}, {sec_tag})")
-            elif elem['type'] in ['column', 'beam_x', 'beam_y']:
-                sec_tag = elem['section_tag']
-                # Obtener el tag de la transformación desde la sección
-                section_info = sections[str(sec_tag)]
-                transf_tag = section_info['transf_tag']
-                code.append(f"    ops.element('elasticBeamColumn', {elem_id}, *{nodes}, {sec_tag}, {transf_tag})")
+        # Solo generar elementos si están disponibles
+        if elements:
+            for elem_id, elem in elements.items():
+                nodes = elem['nodes']
+                if elem['type'] == 'slab':
+                    sec_tag = elem['section_tag']
+                    code.append(f"    ops.element('ShellMITC4', {elem_id}, *{nodes}, {sec_tag})")
+                elif elem['type'] in ['column', 'beam_x', 'beam_y']:
+                    sec_tag = elem['section_tag']
+                    # Obtener el tag de la transformación desde la sección si está disponible
+                    if sections and str(sec_tag) in sections:
+                        section_info = sections[str(sec_tag)]
+                        transf_tag = section_info.get('transf_tag', 4)  # Valor por defecto
+                    else:
+                        transf_tag = 4  # Valor por defecto
+                    code.append(f"    ops.element('elasticBeamColumn', {elem_id}, *{nodes}, {sec_tag}, {transf_tag})")
+        else:
+            code.append("    # No hay elementos definidos en el modelo")
         
         code.extend(["", "    # Aplicar restricciones en la base"])
         num_nodes_per_floor = (nx + 1) * (ny + 1)

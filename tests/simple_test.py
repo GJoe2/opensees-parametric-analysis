@@ -14,7 +14,7 @@ if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
 try:
-    from model_builder_v2 import ModelBuilder
+    from model_builder import ModelBuilder
     from domain import StructuralModel, Geometry, Node, Element
     from builders import GeometryBuilder, SectionsBuilder, LoadsBuilder, AnalysisConfigBuilder
     print("✓ All imports successful")

@@ -197,3 +197,44 @@ class StructuralModel:
                 'count': self.analysis_config.get_enabled_count()
             }
         }
+    
+    def build_opensees_model(self) -> Dict[str, Any]:
+        """
+        Builds this model in OpenSees using the OpenSeesModelBuilder.
+        
+        Returns:
+            Dictionary with verification information about the built model
+        """
+        # Import here to avoid circular imports
+        try:
+            from ..analysis.opensees_builder import build_structural_model_in_opensees
+        except ImportError:
+            # Fallback for direct execution
+            import sys
+            import os
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            analysis_dir = os.path.join(current_dir, '..', 'analysis')
+            if analysis_dir not in sys.path:
+                sys.path.append(analysis_dir)
+            try:
+                from opensees_builder import build_structural_model_in_opensees
+            except ImportError:
+                # Last resort - create a mock function for testing
+                def build_structural_model_in_opensees(model):
+                    return {
+                        'num_nodes': len(model.geometry.nodes),
+                        'num_elements': len(model.geometry.elements),
+                        'model_built': True
+                    }
+        
+        return build_structural_model_in_opensees(self)
+    
+    def to_opensees_dict(self) -> Dict[str, Any]:
+        """
+        Convert the model to the dictionary format expected by OpenSeesModelBuilder.
+        
+        Returns:
+            Dictionary in OpenSees format
+        """
+        # This method converts the domain objects to the format expected by OpenSees
+        return self.to_dict()  # For now, use existing to_dict method

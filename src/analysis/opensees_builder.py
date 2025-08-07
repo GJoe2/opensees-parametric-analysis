@@ -51,11 +51,21 @@ class OpenSeesModelBuilder:
     @staticmethod
     def _create_materials_and_sections(model_data: Dict[str, Any]) -> None:
         """Crea materiales y secciones en OpenSees."""
-        params = model_data['parameters']
-        E = params['E']
-        nu = params['nu']
-        rho = params['rho']
-        G = E / (2 * (1 + nu))
+        # Get material properties from the material object in the model
+        material_data = model_data.get('material', {})
+        if material_data:
+            # Use material properties directly
+            E = material_data['E']
+            nu = material_data['nu']
+            rho = material_data['rho']
+            G = material_data['G']
+        else:
+            # Fallback to parameters section for backward compatibility
+            params = model_data['parameters']
+            E = params['E']
+            nu = params['nu']
+            rho = params['rho']
+            G = E / (2 * (1 + nu))
         
         # Crear secciones
         for sec_tag, sec_info in model_data['sections'].items():

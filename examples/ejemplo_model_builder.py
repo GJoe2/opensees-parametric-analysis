@@ -2,9 +2,10 @@
 Ejemplo de uso de ModelBuilder con sus principales características.
 """
 
+import os
 from opsparametric import ModelBuilder
 
-builder = ModelBuilder(output_dir="models_output")
+builder = ModelBuilder()  # ✅ Sin necesidad de especificar directorio
 
 # Actualizar parámetros fijos (opcional)
 builder.update_fixed_params(num_floors=3, floor_height=3.5)
@@ -19,8 +20,9 @@ model = builder.create_model(
     analysis_params={'modal': {'num_modes': 8}, 'dynamic': {'dt': 0.01}}
 )
 
-# Exportar el modelo a archivo JSON
-builder.export_model(model)
+# Exportar el modelo a archivo JSON (se guarda en ./opsparametric_models/ por defecto)
+exported_file = builder.export_model(model)
+print(f"Modelo exportado en: {exported_file}")
 
 # Obtener resumen del modelo
 summary = builder.get_model_summary(model)
@@ -34,6 +36,8 @@ param_combos = [
     {'L_B_ratio': 2.0, 'B': 15.0, 'nx': 5, 'ny': 4, 'enabled_analyses': ['static']}
 ]
 models = builder.create_multiple_models(param_combos)
-for m in models:
-    builder.export_model(m)
-    print("Modelo exportado:", m.name)
+
+# Exportar todos los modelos (opcional: especificar directorio custom)
+exported_files = builder.export_multiple_models(models)
+for file_path in exported_files:
+    print(f"Modelo exportado: {os.path.basename(file_path)}")

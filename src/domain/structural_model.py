@@ -15,12 +15,14 @@ try:
     from .sections import Sections
     from .loads import Loads
     from .analysis_config import AnalysisConfig
+    from .material import Material
 except ImportError:
     # Fall back to absolute imports (when run directly)
     from geometry import Geometry
     from sections import Sections
     from loads import Loads
     from analysis_config import AnalysisConfig
+    from material import Material
 
 
 @dataclass
@@ -30,6 +32,7 @@ class StructuralModel:
     sections: Sections
     loads: Loads
     analysis_config: AnalysisConfig
+    material: Material
     name: str
     
     def __post_init__(self):
@@ -121,10 +124,11 @@ class StructuralModel:
                 'num_floors': self.geometry.num_floors,
                 'floor_height': self.geometry.floor_height
             },
-            'nodes': nodes_dict,
-            'elements': elements_dict,
+            'material': self.material.to_dict(),
             'sections': sections_dict,
             'transformations': self.sections.transformations,
+            'nodes': nodes_dict,
+            'elements': elements_dict,
             'loads': loads_dict,
             'analysis_config': analysis_dict
         }

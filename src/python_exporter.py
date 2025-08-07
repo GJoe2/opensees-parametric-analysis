@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List
+from typing import Dict, List, Union, Any
 
 class PythonExporter:
     """
@@ -8,28 +8,92 @@ class PythonExporter:
     para generar archivos .py para depuración y desarrollo.
     """
 
-    def __init__(self, output_dir: str = "models"):
+    def __init__(self, output_dir: str = None):
         """
         Inicializa el exportador de Python.
 
         Args:
             output_dir: Directorio donde se guardarán los scripts generados.
+                       Si es None, usa un directorio por defecto relativo al script.
+                       Si es una ruta relativa, se interpreta desde la ubicación del archivo que llama.
         """
+        if output_dir is None:
+            output_dir = self._get_default_output_dir()
+        else:
+            # Si es una ruta relativa, hacerla relativa al script que llama
+            if not os.path.isabs(output_dir):
+                output_dir = self._make_relative_to_caller(output_dir)
+        
         self.output_dir = output_dir
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
+    
+    def _get_default_output_dir(self) -> str:
+        """
+        Get default output directory relative to the calling script.
+        
+        Returns:
+            Default output directory path
+        """
+        import sys
+        
+        # Determinar el directorio base relativo al script que llama
+        if hasattr(sys.modules['__main__'], '__file__'):
+            # Si se ejecuta como script
+            script_dir = os.path.dirname(os.path.abspath(sys.modules['__main__'].__file__))
+        else:
+            # Si se ejecuta desde REPL/Jupyter, usar directorio actual
+            script_dir = os.getcwd()
+        
+        return os.path.join(script_dir, "python_exports")
 
-    def export_script(self, model_info: Dict, separate_files: bool = False) -> List[str]:
+    def _make_relative_to_caller(self, relative_path: str) -> str:
+        """
+        Convert a relative path to be relative to the calling script's directory.
+        
+        Args:
+            relative_path: The relative path to convert
+            
+        Returns:
+            Absolute path relative to the calling script
+        """
+        import sys
+        
+        # Determinar el directorio base relativo al script que llama
+        if hasattr(sys.modules['__main__'], '__file__'):
+            # Si se ejecuta como script
+            script_dir = os.path.dirname(os.path.abspath(sys.modules['__main__'].__file__))
+        else:
+            # Si se ejecuta desde REPL/Jupyter, usar directorio actual
+            script_dir = os.getcwd()
+        
+        return os.path.join(script_dir, relative_path)
+
+    def export_script(self, model_data: Any, separate_files: bool = False) -> List[str]:
         """
         Exporta un modelo a uno o más archivos Python ejecutables.
 
         Args:
-            model_info: Diccionario con la información del modelo (debe incluir analysis_config).
+            model_data: Diccionario con la información del modelo O objeto StructuralModel 
+                       (debe incluir analysis_config en ambos casos).
             separate_files: Si es True, genera un archivo para el modelo y otro para el análisis.
 
         Returns:
             Lista de rutas a los archivos Python generados.
         """
+        # Auto-detectar y convertir si es necesario
+        if hasattr(model_data, 'to_dict'):
+            # Es un objeto StructuralModel o similar
+            model_info = model_data.to_dict()
+            print(f"✓ Detectado objeto {type(model_data).__name__}, convertido a diccionario")
+        elif isinstance(model_data, dict):
+            # Ya es un diccionario
+            model_info = model_data
+            print("✓ Detectado diccionario, usando directamente")
+        else:
+            raise TypeError(f"model_data debe ser un diccionario o un objeto con método to_dict(), "
+                          f"recibido: {type(model_data)}")
+        
         # La configuración SIEMPRE viene del modelo - no hay opciones externas
         if 'analysis_config' not in model_info:
             raise ValueError("El modelo debe incluir configuración de análisis en 'analysis_config'.")
@@ -81,14 +145,17 @@ class PythonExporter:
     def _generate_model_code(self, model_info: Dict) -> List[str]:
         """Genera el código Python para la función build_model()."""
         params = model_info['parameters']
+        material = model_info.get('material', {})
         sections = model_info.get('sections', {})
         elements = model_info.get('elements', {})
         
-        # Valores por defecto para parámetros que podrían faltar
-        E = params.get('E', 2.1e11)  # Concreto típico
-        nu = params.get('nu', 0.3)   # Coeficiente de Poisson típico
+        # Parámetros de material (nueva estructura) con valores por defecto
+        E = material.get('E', 2.1e11)  # Concreto típico
+        nu = material.get('nu', 0.3)   # Coeficiente de Poisson típico
+        rho = material.get('rho', 2400)  # Densidad del concreto
+        
+        # Parámetros geométricos/seccionales desde params con valores por defecto
         slab_thickness = params.get('slab_thickness', 0.15)  # 15 cm
-        rho = params.get('rho', 2400)  # Densidad del concreto
         column_size = params.get('column_size', [0.3, 0.3])  # 30x30 cm
         beam_size = params.get('beam_size', [0.3, 0.5])  # 30x50 cm
         
@@ -106,6 +173,7 @@ class PythonExporter:
             f"    nx, ny = {params['nx']}, {params['ny']}  # Ejes",
             f"    E = {E}  # Módulo de elasticidad",
             f"    nu = {nu}  # Coeficiente de Poisson",
+            f"    G = E / (2 * (1 + nu))  # Módulo de corte",
             f"    thickness = {slab_thickness}  # Espesor de losa",
             f"    rho = {rho}  # Densidad",
             "",
@@ -155,24 +223,19 @@ class PythonExporter:
         ])
         
         code.append("    # Crear elementos")
-        # Solo generar elementos si están disponibles
-        if elements:
-            for elem_id, elem in elements.items():
-                nodes = elem['nodes']
-                if elem['type'] == 'slab':
-                    sec_tag = elem['section_tag']
-                    code.append(f"    ops.element('ShellMITC4', {elem_id}, *{nodes}, {sec_tag})")
-                elif elem['type'] in ['column', 'beam_x', 'beam_y']:
-                    sec_tag = elem['section_tag']
-                    # Obtener el tag de la transformación desde la sección si está disponible
-                    if sections and str(sec_tag) in sections:
-                        section_info = sections[str(sec_tag)]
-                        transf_tag = section_info.get('transf_tag', 4)  # Valor por defecto
-                    else:
-                        transf_tag = 4  # Valor por defecto
-                    code.append(f"    ops.element('elasticBeamColumn', {elem_id}, *{nodes}, {sec_tag}, {transf_tag})")
-        else:
-            code.append("    # No hay elementos definidos en el modelo")
+        for elem_id, elem in elements.items():
+            elem_type = elem['type']
+            nodes = elem['nodes']
+            sec_tag = elem['section_tag']
+            
+            if elem_type == 'slab':
+                code.append(f"    ops.element('ShellMITC4', {elem_id}, *{nodes}, {sec_tag})")
+            elif elem_type in ['column', 'beam_x', 'beam_y']:
+                # Buscar el transf_tag en la sección correspondiente
+                # print(type(list(sections.keys())[0]))
+                section_info = sections.get(str(sec_tag))
+                transf_tag = section_info.get('transf_tag', 1000)  # Usar 1000 como valor por defecto si no se encuentra
+                code.append(f"    ops.element('elasticBeamColumn', {elem_id}, *{nodes}, {sec_tag}, {transf_tag})")
         
         code.extend(["", "    # Aplicar restricciones en la base"])
         num_nodes_per_floor = (nx + 1) * (ny + 1)

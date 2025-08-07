@@ -21,18 +21,19 @@ class SectionsBuilder:
     """Construye las secciones y transformaciones del modelo."""
     
     @staticmethod
-    def create(fixed_params: Dict[str, Any]) -> Sections:
+    def create(fixed_params: Dict[str, Any], material=None) -> Sections:
         """
         Create sections and transformations for the structural model.
         
         Args:
             fixed_params: Dictionary containing fixed model parameters
+            material: Material object with properties (optional for backward compatibility)
             
         Returns:
             Sections object containing all sections and transformations
         """
         # Create sections
-        sections = SectionsBuilder._create_sections(fixed_params)
+        sections = SectionsBuilder._create_sections(fixed_params, material)
         
         # Create geometric transformations
         transformations = SectionsBuilder._create_transformations()
@@ -43,23 +44,27 @@ class SectionsBuilder:
         )
     
     @staticmethod
-    def _create_sections(fixed_params: Dict[str, Any]) -> Dict[int, Section]:
+    def _create_sections(fixed_params: Dict[str, Any], material=None) -> Dict[int, Section]:
         """
         Create all sections for the model.
         
         Args:
             fixed_params: Dictionary containing fixed model parameters
+            material: Material object with properties (optional)
             
         Returns:
             Dictionary of sections keyed by section tag
         """
         sections = {}
         
+        # Get material name for reference (if material is provided)
+        material_name = material.name if material else None
+        
         # Section 1: Slab (ElasticMembranePlateSection)
         sections[1] = Section(
             tag=1,
             section_type='ElasticMembranePlateSection',
-            properties={},
+            properties={'material_name': material_name} if material_name else {},
             element_type='slab',
             thickness=fixed_params.get('slab_thickness', 0.10)
         )
@@ -68,7 +73,7 @@ class SectionsBuilder:
         sections[2] = Section(
             tag=2,
             section_type='Elastic',
-            properties={},
+            properties={'material_name': material_name} if material_name else {},
             element_type='column',
             size=fixed_params.get('column_size', (0.40, 0.40)),
             transf_tag=4  # Transformation tag for columns
@@ -78,7 +83,7 @@ class SectionsBuilder:
         sections[3] = Section(
             tag=3,
             section_type='Elastic',
-            properties={},
+            properties={'material_name': material_name} if material_name else {},
             element_type='beam',
             size=fixed_params.get('beam_size', (0.25, 0.40)),
             transf_tag=5  # Transformation tag for beams

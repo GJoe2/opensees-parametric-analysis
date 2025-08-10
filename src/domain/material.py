@@ -56,6 +56,18 @@ class Material:
         }
     
     @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Material':
+        """Create material from dictionary (JSON import)."""
+        return cls(
+            E=data['E'],
+            nu=data['nu'],
+            rho=data['rho'],
+            fc=data.get('fc'),
+            fy=data.get('fy'),
+            name=data.get('name', 'imported_material')
+        )
+    
+    @classmethod
     def create_concrete_c210(cls, name: str = "concrete_c210") -> 'Material':
         """Crea material de concreto C210 con propiedades típicas."""
         return cls(

@@ -6,15 +6,8 @@ This builder is responsible for creating nodes and elements based on structural 
 
 from typing import Dict, Tuple
 
-try:
-    # Try relative imports first (when used as module)
-    from ..domain.geometry import Geometry, Node, Element
-except ImportError:
-    # Fall back to absolute imports (when run directly)
-    import sys
-    import os
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from domain.geometry import Geometry, Node, Element
+from ..domain.geometry import Geometry, Node, Element
+from ..domain.parameters import Parameters
 
 
 class GeometryBuilder:
@@ -37,37 +30,32 @@ class GeometryBuilder:
         Returns:
             Geometry object containing nodes and elements
         """
-        # Calculate dimensions
-        L = B * L_B_ratio
-        
-        # Create nodes and elements
-        nodes = GeometryBuilder._create_nodes(L, B, nx, ny, num_floors, floor_height)
-        elements = GeometryBuilder._create_elements(nx, ny, num_floors)
-        
-        return Geometry(
-            nodes=nodes,
-            elements=elements,
-            L=L,
+        # Create parameters object (the "master keys")
+        parameters = Parameters(
+            L_B_ratio=L_B_ratio,
             B=B,
             nx=nx,
             ny=ny,
             num_floors=num_floors,
             floor_height=floor_height
         )
+        
+        # Create nodes and elements using parameters
+        nodes = GeometryBuilder._create_nodes(parameters)
+        elements = GeometryBuilder._create_elements(parameters)
+        
+        return Geometry(
+            nodes=nodes,
+            elements=elements
+        )
     
     @staticmethod
-    def _create_nodes(L: float, B: float, nx: int, ny: int, 
-                     num_floors: int, floor_height: float) -> Dict[int, Node]:
+    def _create_nodes(parameters: Parameters) -> Dict[int, Node]:
         """
-        Create nodes for the structural model.
+        Create nodes for the structural model using parameters.
         
         Args:
-            L: Length in X direction
-            B: Width in Y direction
-            nx: Number of divisions in X
-            ny: Number of divisions in Y
-            num_floors: Number of floors
-            floor_height: Height of each floor
+            parameters: Parameters object containing all configuration
             
         Returns:
             Dictionary of nodes keyed by node tag
@@ -76,15 +64,14 @@ class GeometryBuilder:
         node_tag = 1
         
         # Grid spacing
-        dx = L / nx
-        dy = B / ny
-        dz = floor_height
+        dx, dy = parameters.get_grid_dimensions()
+        dz = parameters.floor_height
         
         # Create nodes for each floor (including base)
-        for floor in range(num_floors + 1):
+        for floor in range(parameters.num_floors + 1):
             z = floor * dz
-            for j in range(ny + 1):
-                for i in range(nx + 1):
+            for j in range(parameters.ny + 1):
+                for i in range(parameters.nx + 1):
                     x = i * dx
                     y = j * dy
                     
@@ -99,31 +86,30 @@ class GeometryBuilder:
         return nodes
     
     @staticmethod
-    def _create_elements(nx: int, ny: int, num_floors: int) -> Dict[int, Element]:
+    def _create_elements(parameters: Parameters) -> Dict[int, Element]:
         """
-        Create elements for the structural model.
+        Create elements for the structural model using parameters.
         
         Args:
-            nx: Number of divisions in X
-            ny: Number of divisions in Y
-            num_floors: Number of floors
+            parameters: Parameters object containing all configuration
             
         Returns:
             Dictionary of elements keyed by element tag
         """
         elements = {}
         elem_tag = 1
+        elem_tag = 1
         
         # Create slab elements (ShellMITC4) for each floor level (except base)
-        for floor in range(1, num_floors + 1):
-            base_node = floor * (nx + 1) * (ny + 1)
-            for j in range(ny):
-                for i in range(nx):
+        for floor in range(1, parameters.num_floors + 1):
+            base_node = floor * (parameters.nx + 1) * (parameters.ny + 1)
+            for j in range(parameters.ny):
+                for i in range(parameters.nx):
                     # Slab element nodes
-                    n1 = base_node + j * (nx + 1) + i + 1
-                    n2 = base_node + j * (nx + 1) + i + 2
-                    n3 = base_node + (j + 1) * (nx + 1) + i + 2
-                    n4 = base_node + (j + 1) * (nx + 1) + i + 1
+                    n1 = base_node + j * (parameters.nx + 1) + i + 1
+                    n2 = base_node + j * (parameters.nx + 1) + i + 2
+                    n3 = base_node + (j + 1) * (parameters.nx + 1) + i + 2
+                    n4 = base_node + (j + 1) * (parameters.nx + 1) + i + 1
                     
                     elements[elem_tag] = Element(
                         tag=elem_tag,
@@ -135,12 +121,12 @@ class GeometryBuilder:
                     elem_tag += 1
         
         # Create column elements (elasticBeamColumn)
-        for j in range(ny + 1):
-            for i in range(nx + 1):
-                for floor in range(num_floors):
+        for j in range(parameters.ny + 1):
+            for i in range(parameters.nx + 1):
+                for floor in range(parameters.num_floors):
                     # Column nodes
-                    n1 = floor * (nx + 1) * (ny + 1) + j * (nx + 1) + i + 1
-                    n2 = (floor + 1) * (nx + 1) * (ny + 1) + j * (nx + 1) + i + 1
+                    n1 = floor * (parameters.nx + 1) * (parameters.ny + 1) + j * (parameters.nx + 1) + i + 1
+                    n2 = (floor + 1) * (parameters.nx + 1) * (parameters.ny + 1) + j * (parameters.nx + 1) + i + 1
                     
                     elements[elem_tag] = Element(
                         tag=elem_tag,
@@ -152,14 +138,14 @@ class GeometryBuilder:
                     elem_tag += 1
         
         # Create beam elements (elasticBeamColumn) for each floor level (except base)
-        for floor in range(1, num_floors + 1):
-            base_node = floor * (nx + 1) * (ny + 1)
+        for floor in range(1, parameters.num_floors + 1):
+            base_node = floor * (parameters.nx + 1) * (parameters.ny + 1)
             
             # Beams in X direction
-            for j in range(ny + 1):
-                for i in range(nx):
-                    n1 = base_node + j * (nx + 1) + i + 1
-                    n2 = base_node + j * (nx + 1) + i + 2
+            for j in range(parameters.ny + 1):
+                for i in range(parameters.nx):
+                    n1 = base_node + j * (parameters.nx + 1) + i + 1
+                    n2 = base_node + j * (parameters.nx + 1) + i + 2
                     
                     elements[elem_tag] = Element(
                         tag=elem_tag,
@@ -171,10 +157,10 @@ class GeometryBuilder:
                     elem_tag += 1
             
             # Beams in Y direction
-            for j in range(ny):
-                for i in range(nx + 1):
-                    n1 = base_node + j * (nx + 1) + i + 1
-                    n2 = base_node + (j + 1) * (nx + 1) + i + 1
+            for j in range(parameters.ny):
+                for i in range(parameters.nx + 1):
+                    n1 = base_node + j * (parameters.nx + 1) + i + 1
+                    n2 = base_node + (j + 1) * (parameters.nx + 1) + i + 1
                     
                     elements[elem_tag] = Element(
                         tag=elem_tag,

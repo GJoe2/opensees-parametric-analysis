@@ -6,31 +6,24 @@ Contains the main domain object that represents a complete structural model.
 
 import json
 import os
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Dict, Any
 
-try:
-    # Try relative imports first (when used as module)
-    from .geometry import Geometry
-    from .sections import Sections
-    from .loads import Loads
-    from .analysis_config import AnalysisConfig
-    from .material import Material
-except ImportError:
-    # Fall back to absolute imports (when run directly)
-    from geometry import Geometry
-    from sections import Sections
-    from loads import Loads
-    from analysis_config import AnalysisConfig
-    from material import Material
+from .geometry import Geometry
+from .sections import Sections
+from .loads import LoadManager
+from .analysis_config import AnalysisConfig
+from .material import Material
+from .parameters import Parameters
 
 
 @dataclass
 class StructuralModel:
     """Represents a complete structural model."""
+    parameters: Parameters  # Master keys - parametric configuration
     geometry: Geometry
     sections: Sections
-    loads: Loads
+    loads: LoadManager
     analysis_config: AnalysisConfig
     material: Material
     name: str
@@ -47,91 +40,39 @@ class StructuralModel:
         Returns:
             Dictionary representation of the model
         """
-        # Convert nodes to serializable format
-        nodes_dict = {}
-        for tag, node in self.geometry.nodes.items():
-            nodes_dict[tag] = {
-                'coords': node.coords,
-                'floor': node.floor,
-                'grid_pos': node.grid_pos
-            }
+        # Get sections data and extract specific components
+        sections_data = self.sections.to_dict()
+        sections_dict = sections_data.get('sections', {})  # Extract sections dict
+        transformations = sections_data.get('transformations', {})
         
-        # Convert elements to serializable format
-        elements_dict = {}
-        for tag, element in self.geometry.elements.items():
-            elements_dict[tag] = {
-                'type': element.element_type,
-                'nodes': element.nodes,
-                'floor': element.floor,
-                'section_tag': element.section_tag
-            }
+        # Get loads data and extract load_pattern_params
+        loads_data = self.loads.to_dict()
+        loads_dict = loads_data.get('loads', {})  # Extract loads dict
+        load_pattern_params = loads_data.get('load_pattern_params', {})
         
-        # Convert sections to serializable format
-        sections_dict = {}
-        for tag, section in self.sections.sections.items():
-            section_data = {
-                'type': section.section_type,
-                **section.properties
-            }
-            if section.element_type:
-                section_data['element_type'] = section.element_type
-            if section.size:
-                section_data['size'] = section.size
-            if section.thickness:
-                section_data['thickness'] = section.thickness
-            if section.transf_tag:
-                section_data['transf_tag'] = section.transf_tag
-            sections_dict[tag] = section_data
+        # Get geometry data
+        geometry_data = self.geometry.to_dict()
+        nodes = geometry_data.get('nodes', {})
+        elements = geometry_data.get('elements', {})
         
-        # Convert loads to serializable format
-        loads_dict = {}
-        for node_tag, load in self.loads.loads.items():
-            loads_dict[node_tag] = {
-                'type': load.load_type,
-                'value': load.value,
-                'direction': load.direction
-            }
-            if load.load_case:
-                loads_dict[node_tag]['load_case'] = load.load_case
-        
-        # Convert analysis config to serializable format
-        analysis_dict = {
-            'enabled_analyses': self.analysis_config.enabled_analyses
-        }
-        
-        # Add visualization config
-        if self.analysis_config.visualization_config:
-            analysis_dict['visualization'] = asdict(self.analysis_config.visualization_config)
-        
-        # Add specific analysis configs
-        if self.analysis_config.static_config:
-            analysis_dict['static'] = asdict(self.analysis_config.static_config)
-        
-        if self.analysis_config.modal_config:
-            analysis_dict['modal'] = asdict(self.analysis_config.modal_config)
-        
-        if self.analysis_config.dynamic_config:
-            analysis_dict['dynamic'] = asdict(self.analysis_config.dynamic_config)
-        
-        return {
+        # Build the result in the desired order
+        result = {
             'name': self.name,
-            'parameters': {
-                'L_B_ratio': self.geometry.get_aspect_ratio(),
-                'nx': self.geometry.nx,
-                'ny': self.geometry.ny,
-                'L': self.geometry.L,
-                'B': self.geometry.B,
-                'num_floors': self.geometry.num_floors,
-                'floor_height': self.geometry.floor_height
-            },
+            'parameters': self.parameters.to_dict(),
             'material': self.material.to_dict(),
-            'sections': sections_dict,
-            'transformations': self.sections.transformations,
-            'nodes': nodes_dict,
-            'elements': elements_dict,
-            'loads': loads_dict,
-            'analysis_config': analysis_dict
+            'sections': sections_dict,  # Direct assignment of sections dict
+            'transformations': transformations,
+            'nodes': nodes,
+            'elements': elements,
+            'loads': loads_dict,  # Direct assignment of loads dict
+            'analysis_config': self.analysis_config.to_dict()
         }
+        
+        # Add load_pattern_params if they exist
+        if load_pattern_params:
+            result['load_pattern_params'] = load_pattern_params
+            
+        return result
     
     def save(self, filepath: str) -> None:
         """
@@ -140,8 +81,10 @@ class StructuralModel:
         Args:
             filepath: Path where to save the model file
         """
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        # Ensure the directory exists only if there's a directory in the path
+        directory = os.path.dirname(filepath)
+        if directory:  # Only create directory if there's one specified
+            os.makedirs(directory, exist_ok=True)
         
         # Convert to dict and save
         model_dict = self.to_dict()
@@ -164,10 +107,54 @@ class StructuralModel:
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
-        # This is a placeholder - full implementation would require
-        # reconstructing all domain objects from the JSON data
-        # For now, this shows the intended interface
-        raise NotImplementedError("Model loading from JSON will be implemented in a future version")
+        return cls.from_dict(data)
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'StructuralModel':
+        """
+        Create a StructuralModel from a dictionary (JSON import).
+        
+        Args:
+            data: Dictionary containing model data
+            
+        Returns:
+            StructuralModel instance
+        """
+        # Create parameters object
+        parameters = Parameters.from_dict(data['parameters'])
+        
+        # Reconstruct geometry data
+        geometry_data = {
+            'nodes': data.get('nodes', {}),
+            'elements': data.get('elements', {})
+        }
+        
+        # Reconstruct sections data
+        sections_data = data['sections'].copy()
+        if 'transformations' in data:
+            sections_data['transformations'] = data['transformations']
+        
+        # Reconstruct loads data
+        loads_data = data.get('loads', {}).copy()
+        if 'load_pattern_params' in data:
+            loads_data['load_pattern_params'] = data['load_pattern_params']
+        
+        # Create domain objects
+        geometry = Geometry.from_dict(geometry_data)
+        sections = Sections.from_dict(sections_data)
+        loads = LoadManager.from_dict(loads_data)
+        analysis_config = AnalysisConfig.from_dict(data['analysis_config'])
+        material = Material.from_dict(data['material'])
+        
+        return cls(
+            parameters=parameters,
+            geometry=geometry,
+            sections=sections,
+            loads=loads,
+            analysis_config=analysis_config,
+            material=material,
+            name=data['name']
+        )
     
     def get_model_summary(self) -> Dict[str, Any]:
         """
@@ -179,16 +166,16 @@ class StructuralModel:
         return {
             'name': self.name,
             'dimensions': {
-                'L': self.geometry.L,
-                'B': self.geometry.B,
-                'aspect_ratio': self.geometry.get_aspect_ratio(),
-                'height': self.geometry.get_total_height(),
-                'footprint_area': self.geometry.get_footprint_area()
+                'L': self.parameters.L,
+                'B': self.parameters.B,
+                'aspect_ratio': self.parameters.aspect_ratio,
+                'height': self.parameters.total_height,
+                'footprint_area': self.parameters.footprint_area
             },
             'mesh': {
-                'nx': self.geometry.nx,
-                'ny': self.geometry.ny,
-                'num_floors': self.geometry.num_floors
+                'nx': self.parameters.nx,
+                'ny': self.parameters.ny,
+                'num_floors': self.parameters.num_floors
             },
             'counts': {
                 'nodes': len(self.geometry.nodes),
@@ -201,44 +188,3 @@ class StructuralModel:
                 'count': self.analysis_config.get_enabled_count()
             }
         }
-    
-    def build_opensees_model(self) -> Dict[str, Any]:
-        """
-        Builds this model in OpenSees using the OpenSeesModelBuilder.
-        
-        Returns:
-            Dictionary with verification information about the built model
-        """
-        # Import here to avoid circular imports
-        try:
-            from ..analysis.opensees_builder import build_structural_model_in_opensees
-        except ImportError:
-            # Fallback for direct execution
-            import sys
-            import os
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            analysis_dir = os.path.join(current_dir, '..', 'analysis')
-            if analysis_dir not in sys.path:
-                sys.path.append(analysis_dir)
-            try:
-                from opensees_builder import build_structural_model_in_opensees
-            except ImportError:
-                # Last resort - create a mock function for testing
-                def build_structural_model_in_opensees(model):
-                    return {
-                        'num_nodes': len(model.geometry.nodes),
-                        'num_elements': len(model.geometry.elements),
-                        'model_built': True
-                    }
-        
-        return build_structural_model_in_opensees(self)
-    
-    def to_opensees_dict(self) -> Dict[str, Any]:
-        """
-        Convert the model to the dictionary format expected by OpenSeesModelBuilder.
-        
-        Returns:
-            Dictionary in OpenSees format
-        """
-        # This method converts the domain objects to the format expected by OpenSees
-        return self.to_dict()  # For now, use existing to_dict method

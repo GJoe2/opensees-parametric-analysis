@@ -14,9 +14,11 @@ __license__ = "Apache 2.0"
 from .model_builder import ModelBuilder
 from .analysis_engine import AnalysisEngine
 from .python_exporter import PythonExporter
+from .python_exporter_v2 import PythonExporterV2
 
 __all__ = [
     "ModelBuilder",
     "AnalysisEngine", 
     "PythonExporter",
+    "PythonExporterV2",
 ]

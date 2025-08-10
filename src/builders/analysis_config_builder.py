@@ -6,19 +6,9 @@ This builder is responsible for creating analysis configurations based on enable
 
 from typing import List, Dict, Any, Optional
 
-try:
-    # Try relative imports first (when used as module)
-    from ..domain.analysis_config import (
-        AnalysisConfig, StaticConfig, ModalConfig, DynamicConfig, VisualizationConfig
-    )
-except ImportError:
-    # Fall back to absolute imports (when run directly)
-    import sys
-    import os
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from domain.analysis_config import (
-        AnalysisConfig, StaticConfig, ModalConfig, DynamicConfig, VisualizationConfig
-    )
+from ..domain.analysis_config import (
+    AnalysisConfig, StaticConfig, ModalConfig, DynamicConfig, VisualizationConfig
+)
 
 
 class AnalysisConfigBuilder:

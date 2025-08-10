@@ -13,6 +13,7 @@ from typing import Dict, List, Optional, Any
 
 from .builders.utility_object_builder import UtilityBuilder
 from .domain import StructuralModel
+from .domain.parameters import Parameters
 from .builders import GeometryBuilder, SectionsBuilder, LoadsBuilder, AnalysisConfigBuilder, MaterialBuilder
 
 
@@ -150,8 +151,15 @@ class ModelBuilder:
         if analysis_params is None:
             analysis_params = {}
 
-        # Calculate dimensions
-        L, B = UtilityBuilder.calculate_dimensions(L_B_ratio, B)
+        # Create parameters object (master keys)
+        parameters = Parameters(
+            L_B_ratio=L_B_ratio,
+            B=B,
+            nx=nx,
+            ny=ny,
+            num_floors=self.fixed_params['num_floors'],
+            floor_height=self.fixed_params['floor_height']
+        )
         
         # Create components using specialized builders
         geometry = GeometryBuilder.create(
@@ -171,6 +179,7 @@ class ModelBuilder:
         
         loads = LoadsBuilder.create(
             geometry=geometry,
+            parameters=parameters,
             load_params={'distributed_load': 1.0}
         )
         analysis_config = AnalysisConfigBuilder.create(
@@ -180,6 +189,7 @@ class ModelBuilder:
         
         # Create and save model
         model = StructuralModel(
+            parameters=parameters,
             geometry=geometry,
             sections=sections,
             loads=loads,

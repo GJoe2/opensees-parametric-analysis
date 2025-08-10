@@ -6,15 +6,7 @@ This builder is responsible for creating sections and geometric transformations.
 
 from typing import Dict, Any, Tuple
 
-try:
-    # Try relative imports first (when used as module)
-    from ..domain.sections import Sections, Section
-except ImportError:
-    # Fall back to absolute imports (when run directly)
-    import sys
-    import os
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from domain.sections import Sections, Section
+from ..domain.sections import Sections, FrameSection, ShellSection
 
 
 class SectionsBuilder:
@@ -44,7 +36,7 @@ class SectionsBuilder:
         )
     
     @staticmethod
-    def _create_sections(fixed_params: Dict[str, Any], material=None) -> Dict[int, Section]:
+    def _create_sections(fixed_params: Dict[str, Any], material=None) -> Dict[int, Any]:
         """
         Create all sections for the model.
         
@@ -61,7 +53,7 @@ class SectionsBuilder:
         material_name = material.name if material else None
         
         # Section 1: Slab (ElasticMembranePlateSection)
-        sections[1] = Section(
+        sections[1] = ShellSection(
             tag=1,
             section_type='ElasticMembranePlateSection',
             properties={'material_name': material_name} if material_name else {},
@@ -70,7 +62,7 @@ class SectionsBuilder:
         )
         
         # Section 2: Column (Elastic)
-        sections[2] = Section(
+        sections[2] = FrameSection(
             tag=2,
             section_type='Elastic',
             properties={'material_name': material_name} if material_name else {},
@@ -80,7 +72,7 @@ class SectionsBuilder:
         )
         
         # Section 3: Beam (Elastic)
-        sections[3] = Section(
+        sections[3] = FrameSection(
             tag=3,
             section_type='Elastic',
             properties={'material_name': material_name} if material_name else {},
@@ -117,7 +109,7 @@ class SectionsBuilder:
     
     @staticmethod
     def create_custom_section(tag: int, section_type: str, element_type: str, 
-                             **kwargs) -> Section:
+                             **kwargs):
         """
         Create a custom section with specified parameters.
         
@@ -128,14 +120,30 @@ class SectionsBuilder:
             **kwargs: Additional section properties
             
         Returns:
-            Section object
+            FrameSection or ShellSection object depending on element_type
         """
-        return Section(
-            tag=tag,
-            section_type=section_type,
-            properties=kwargs.get('properties', {}),
-            element_type=element_type,
-            size=kwargs.get('size'),
-            thickness=kwargs.get('thickness'),
-            transf_tag=kwargs.get('transf_tag')
-        )
+        properties = kwargs.get('properties', {})
+        
+        if element_type == 'slab':
+            if 'thickness' not in kwargs:
+                raise ValueError("ShellSection requires 'thickness' parameter")
+            return ShellSection(
+                tag=tag,
+                section_type=section_type,
+                properties=properties,
+                element_type=element_type,
+                thickness=kwargs['thickness']
+            )
+        elif element_type in ['column', 'beam']:
+            if 'size' not in kwargs or 'transf_tag' not in kwargs:
+                raise ValueError("FrameSection requires 'size' and 'transf_tag' parameters")
+            return FrameSection(
+                tag=tag,
+                section_type=section_type,
+                properties=properties,
+                element_type=element_type,
+                size=kwargs['size'],
+                transf_tag=kwargs['transf_tag']
+            )
+        else:
+            raise ValueError(f"Unknown element_type: {element_type}. Must be 'slab', 'column', or 'beam'.")

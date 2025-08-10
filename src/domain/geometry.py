@@ -6,6 +6,7 @@ Contains classes for representing geometric entities like nodes and elements.
 
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
+from .parameters import Parameters
 
 
 @dataclass
@@ -22,6 +23,25 @@ class Node:
             raise ValueError("Node coordinates must have exactly 3 dimensions [x, y, z]")
         if self.floor < 0:
             raise ValueError("Floor number must be non-negative")
+    
+    def to_dict(self) -> dict:
+        """Serialize node to dictionary for JSON export."""
+        return {
+            'tag': self.tag,
+            'coords': self.coords,
+            'floor': self.floor,
+            'grid_pos': list(self.grid_pos) if self.grid_pos else None
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> 'Node':
+        """Create node from dictionary (JSON import)."""
+        return cls(
+            tag=data['tag'],
+            coords=data['coords'],
+            floor=data['floor'],
+            grid_pos=tuple(data['grid_pos']) if data['grid_pos'] else None
+        )
 
 
 @dataclass
@@ -41,6 +61,27 @@ class Element:
             raise ValueError("Floor number must be non-negative")
         if self.section_tag <= 0:
             raise ValueError("Section tag must be positive")
+    
+    def to_dict(self) -> dict:
+        """Serialize element to dictionary for JSON export."""
+        return {
+            'tag': self.tag,
+            'element_type': self.element_type,
+            'nodes': self.nodes,
+            'floor': self.floor,
+            'section_tag': self.section_tag
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> 'Element':
+        """Create element from dictionary (JSON import)."""
+        return cls(
+            tag=data['tag'],
+            element_type=data['element_type'],
+            nodes=data['nodes'],
+            floor=data['floor'],
+            section_tag=data['section_tag']
+        )
 
 
 @dataclass
@@ -48,29 +89,21 @@ class Geometry:
     """Represents the geometry of a structural model."""
     nodes: Dict[int, Node]
     elements: Dict[int, Element]
-    L: float  # Length in X direction
-    B: float  # Width in Y direction
-    nx: int   # Number of divisions in X
-    ny: int   # Number of divisions in Y
-    num_floors: int
-    floor_height: float
     
     def __post_init__(self):
         """Validate geometry data after initialization."""
-        if self.L <= 0 or self.B <= 0:
-            raise ValueError("Dimensions L and B must be positive")
-        if self.nx <= 0 or self.ny <= 0:
-            raise ValueError("Number of divisions nx and ny must be positive")
-        if self.num_floors <= 0:
-            raise ValueError("Number of floors must be positive")
-        if self.floor_height <= 0:
-            raise ValueError("Floor height must be positive")
+        if not self.nodes:
+            raise ValueError("Geometry must have at least one node")
+        if not self.elements:
+            raise ValueError("Geometry must have at least one element")
     
-    def get_boundary_nodes(self, floor: Optional[int] = None) -> List[Node]:
+    def get_boundary_nodes(self, nx: int, ny: int, floor: Optional[int] = None) -> List[Node]:
         """
         Get nodes on the boundary of the structure.
         
         Args:
+            nx: Number of divisions in X direction
+            ny: Number of divisions in Y direction
             floor: Specific floor to get boundary nodes from. If None, gets from all floors.
             
         Returns:
@@ -85,7 +118,7 @@ class Geometry:
             if node.grid_pos is not None:
                 i, j = node.grid_pos
                 # Node is on boundary if it's on the edge of the grid
-                if i == 0 or i == self.nx or j == 0 or j == self.ny:
+                if i == 0 or i == nx or j == 0 or j == ny:
                     boundary_nodes.append(node)
         
         return boundary_nodes
@@ -120,14 +153,20 @@ class Geometry:
                     elements.append(element)
         return elements
     
-    def get_total_height(self) -> float:
-        """Get the total height of the structure."""
-        return self.num_floors * self.floor_height
+    def to_dict(self) -> dict:
+        """Serialize geometry to dictionary for JSON export."""
+        return {
+            'nodes': {str(k): v.to_dict() for k, v in self.nodes.items()},
+            'elements': {str(k): v.to_dict() for k, v in self.elements.items()}
+        }
     
-    def get_footprint_area(self) -> float:
-        """Get the footprint area of the structure."""
-        return self.L * self.B
-    
-    def get_aspect_ratio(self) -> float:
-        """Get the aspect ratio L/B."""
-        return self.L / self.B
+    @classmethod
+    def from_dict(cls, data: dict) -> 'Geometry':
+        """Create geometry from dictionary (JSON import)."""
+        nodes = {int(k): Node.from_dict(v) for k, v in data['nodes'].items()}
+        elements = {int(k): Element.from_dict(v) for k, v in data['elements'].items()}
+        
+        return cls(
+            nodes=nodes,
+            elements=elements
+        )

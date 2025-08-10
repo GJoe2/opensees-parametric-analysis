@@ -6,7 +6,6 @@ Script de prueba simple para verificar los cambios en la estructura JSON.
 import sys
 import os
 import json
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from opsparametric import ModelBuilder
 

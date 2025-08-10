@@ -9,7 +9,7 @@ in an object-oriented way, separating business logic from infrastructure concern
 from .structural_model import StructuralModel
 from .geometry import Geometry, Node, Element
 from .sections import Sections, Section
-from .loads import Loads, Load
+from .loads import PointLoad, LoadManager
 from .analysis_config import AnalysisConfig, StaticConfig, ModalConfig, DynamicConfig, VisualizationConfig
 from .material import Material
 from .analysis_results import (
@@ -21,7 +21,7 @@ __all__ = [
     'StructuralModel',
     'Geometry', 'Node', 'Element',
     'Sections', 'Section',
-    'Loads', 'Load',
+    'PointLoad', 'LoadManager',
     'Material',
     'AnalysisConfig', 'StaticConfig', 'ModalConfig', 'DynamicConfig', 'VisualizationConfig',
     'AnalysisResults', 'StaticResults', 'ModalResults', 'DynamicResults',

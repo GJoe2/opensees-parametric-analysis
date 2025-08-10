@@ -6,10 +6,7 @@ Script para probar el comportamiento del directorio de salida del PythonExporter
 import sys
 import os
 
-# Agregar el directorio src al path para importar el módulo
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-from python_exporter import PythonExporter
+from opsparametric import PythonExporter
 
 def test_output_directories():
     """Prueba diferentes configuraciones de directorio de salida."""

@@ -7,16 +7,10 @@ import sys
 import tempfile
 import shutil
 
-# Add src to path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.join(current_dir, '..', 'src')
-if src_dir not in sys.path:
-    sys.path.insert(0, src_dir)
-
 try:
-    from model_builder import ModelBuilder
-    from domain import StructuralModel, Geometry, Node, Element
-    from builders import GeometryBuilder, SectionsBuilder, LoadsBuilder, AnalysisConfigBuilder
+    from opsparametric import ModelBuilder
+    from opsparametric.domain import StructuralModel, Geometry, Node, Element
+    from opsparametric.builders import GeometryBuilder, SectionsBuilder, LoadsBuilder, AnalysisConfigBuilder
     print("✓ All imports successful")
 except ImportError as e:
     print(f"❌ Import error: {e}")

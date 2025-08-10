@@ -6,15 +6,7 @@ Crea objetos Material con diferentes configuraciones y parámetros.
 
 from typing import Dict, Any
 
-try:
-    # Try relative imports first (when used as module)
-    from ..domain.material import Material
-except ImportError:
-    # Fall back to absolute imports (when run directly)
-    import sys
-    import os
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from domain.material import Material
+from ..domain.material import Material
 
 
 class MaterialBuilder:

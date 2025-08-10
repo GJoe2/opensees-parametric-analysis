@@ -1,57 +1,53 @@
 """
 Loads builder for creating structural loads.
 
-This builder is responsible for creating loads based on geometry and load parameters.
+This builder is responsible for creating loads     @staticmethod
+    def _create_seismic_loads(geometry: Geometry, load_params: Dict[str, Any]) -> Dict[int, PointLoad]:sed on geometry and load parameters.
 """
 
 from typing import Dict, Any
 
-try:
-    # Try relative imports first (when used as module)
-    from ..domain.geometry import Geometry
-    from ..domain.loads import Loads, Load
-except ImportError:
-    # Fall back to absolute imports (when run directly)
-    import sys
-    import os
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from domain.geometry import Geometry
-    from domain.loads import Loads, Load
+from ..domain.geometry import Geometry
+from ..domain.loads import LoadManager, PointLoad
+from ..domain.parameters import Parameters
+
 
 
 class LoadsBuilder:
     """Construye las cargas del modelo estructural."""
     
     @staticmethod
-    def create(geometry: Geometry, load_params: Dict[str, Any]) -> Loads:
+    def create(geometry: Geometry, parameters: Parameters, load_params: Dict[str, Any]) -> LoadManager:
         """
         Create loads for the structural model.
         
         Args:
             geometry: Geometry object containing nodes and elements
+            parameters: Parameters object containing model configuration
             load_params: Dictionary containing load parameters
             
         Returns:
-            Loads object containing all loads
+            LoadManager object containing all loads
         """
-        loads_dict = LoadsBuilder._create_distributed_loads(geometry, load_params)
+        loads_dict = LoadsBuilder._create_distributed_loads(geometry, parameters, load_params)
         
         # Additional load patterns can be added here
-        # loads_dict.update(LoadsBuilder._create_point_loads(geometry, load_params))
-        # loads_dict.update(LoadsBuilder._create_seismic_loads(geometry, load_params))
+        # loads_dict.update(LoadsBuilder._create_point_loads(geometry, parameters, load_params))
+        # loads_dict.update(LoadsBuilder._create_seismic_loads(geometry, parameters, load_params))
         
-        return Loads(
+        return LoadManager(
             loads=loads_dict,
             load_pattern_params=load_params
         )
     
     @staticmethod
-    def _create_distributed_loads(geometry: Geometry, load_params: Dict[str, Any]) -> Dict[int, Load]:
+    def _create_distributed_loads(geometry: Geometry, parameters: Parameters, load_params: Dict[str, Any]) -> Dict[int, PointLoad]:
         """
         Create distributed loads on the top floor.
         
         Args:
             geometry: Geometry object
+            parameters: Parameters object containing model configuration
             load_params: Load parameters
             
         Returns:
@@ -63,10 +59,10 @@ class LoadsBuilder:
         q = load_params.get('distributed_load', 1.0)
         
         # Apply load to all nodes on the top floor
-        top_floor = geometry.num_floors
+        top_floor = parameters.num_floors
         for node_tag, node in geometry.nodes.items():
             if node.floor == top_floor:
-                loads[node_tag] = Load(
+                loads[node_tag] = PointLoad(
                     node_tag=node_tag,
                     load_type='distributed_load',
                     value=-q,  # Negative for downward load
@@ -77,12 +73,13 @@ class LoadsBuilder:
         return loads
     
     @staticmethod
-    def _create_point_loads(geometry: Geometry, load_params: Dict[str, Any]) -> Dict[int, Load]:
+    def _create_point_loads(geometry: Geometry, parameters: Parameters, load_params: Dict[str, Any]) -> Dict[int, PointLoad]:
         """
         Create point loads at specific locations.
         
         Args:
             geometry: Geometry object
+            parameters: Parameters object containing model configuration
             load_params: Load parameters
             
         Returns:
@@ -96,7 +93,7 @@ class LoadsBuilder:
         for point_load in point_loads:
             node_tag = point_load.get('node_tag')
             if node_tag and node_tag in geometry.nodes:
-                loads[node_tag] = Load(
+                loads[node_tag] = PointLoad(
                     node_tag=node_tag,
                     load_type='point_load',
                     value=point_load.get('value', 0.0),
@@ -107,12 +104,13 @@ class LoadsBuilder:
         return loads
     
     @staticmethod
-    def _create_seismic_loads(geometry: Geometry, load_params: Dict[str, Any]) -> Dict[int, Load]:
+    def _create_seismic_loads(geometry: Geometry, parameters: Parameters, load_params: Dict[str, Any]) -> Dict[int, PointLoad]:
         """
         Create seismic loads based on structural characteristics.
         
         Args:
             geometry: Geometry object
+            parameters: Parameters object containing model configuration
             load_params: Load parameters
             
         Returns:
@@ -132,7 +130,7 @@ class LoadsBuilder:
     
     @staticmethod
     def create_custom_load_pattern(geometry: Geometry, 
-                                 load_specifications: list) -> Dict[int, Load]:
+                                 load_specifications: list) -> Dict[int, PointLoad]:
         """
         Create custom load pattern based on specifications.
         
@@ -148,7 +146,7 @@ class LoadsBuilder:
         for spec in load_specifications:
             node_tag = spec.get('node_tag')
             if node_tag and node_tag in geometry.nodes:
-                loads[node_tag] = Load(
+                loads[node_tag] = PointLoad(
                     node_tag=node_tag,
                     load_type=spec.get('load_type', 'custom'),
                     value=spec.get('value', 0.0),

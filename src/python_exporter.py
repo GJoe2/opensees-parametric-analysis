@@ -224,17 +224,14 @@ class PythonExporter:
         
         code.append("    # Crear elementos")
         for elem_id, elem in elements.items():
-            elem_type = elem['type']
+            elem_type = elem['element_type']
             nodes = elem['nodes']
             sec_tag = elem['section_tag']
-            
             if elem_type == 'slab':
                 code.append(f"    ops.element('ShellMITC4', {elem_id}, *{nodes}, {sec_tag})")
             elif elem_type in ['column', 'beam_x', 'beam_y']:
-                # Buscar el transf_tag en la sección correspondiente
-                # print(type(list(sections.keys())[0]))
                 section_info = sections.get(str(sec_tag))
-                transf_tag = section_info.get('transf_tag', 1000)  # Usar 1000 como valor por defecto si no se encuentra
+                transf_tag = section_info.get("transf_tag", 1000)  # Usar 1000 como valor por defecto si no se encuentra
                 code.append(f"    ops.element('elasticBeamColumn', {elem_id}, *{nodes}, {sec_tag}, {transf_tag})")
         
         code.extend(["", "    # Aplicar restricciones en la base"])

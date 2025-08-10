@@ -4,7 +4,7 @@ Analysis configuration domain objects.
 Contains classes for representing analysis configurations and parameters.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import List, Optional, Dict, Any
 
 
@@ -149,3 +149,47 @@ class AnalysisConfig:
         for key, value in kwargs.items():
             if hasattr(self.visualization_config, key):
                 setattr(self.visualization_config, key, value)
+    
+    def to_dict(self) -> dict:
+        """Serialize analysis config to dictionary for JSON export."""
+        result = {
+            'enabled_analyses': self.enabled_analyses
+        }
+        
+        if self.static_config:
+            result['static_config'] = asdict(self.static_config)
+        if self.modal_config:
+            result['modal_config'] = asdict(self.modal_config)
+        if self.dynamic_config:
+            result['dynamic_config'] = asdict(self.dynamic_config)
+        if self.visualization_config:
+            result['visualization_config'] = asdict(self.visualization_config)
+        
+        return result
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> 'AnalysisConfig':
+        """Create analysis config from dictionary (JSON import)."""
+        static_config = None
+        if 'static_config' in data:
+            static_config = StaticConfig(**data['static_config'])
+        
+        modal_config = None
+        if 'modal_config' in data:
+            modal_config = ModalConfig(**data['modal_config'])
+        
+        dynamic_config = None
+        if 'dynamic_config' in data:
+            dynamic_config = DynamicConfig(**data['dynamic_config'])
+        
+        visualization_config = None
+        if 'visualization_config' in data:
+            visualization_config = VisualizationConfig(**data['visualization_config'])
+        
+        return cls(
+            enabled_analyses=data['enabled_analyses'],
+            static_config=static_config,
+            modal_config=modal_config,
+            dynamic_config=dynamic_config,
+            visualization_config=visualization_config
+        )

@@ -1,0 +1,36 @@
+STRUCTURAL MODEL SUMMARY: TestBuilding_V2
+==================================================
+
+DIMENSIONS:
+  Length (L): 18.0 m
+  Width (B): 12.0 m
+  Aspect Ratio (L/B): 1.5
+  Total Height: 9.0 m
+  Footprint Area: 216.0 m²
+
+MESH:
+  X-direction axes: 3
+  Y-direction axes: 3
+  Number of floors: 3
+
+MODEL COUNTS:
+  Nodes: 64
+  Elements: 147
+  Sections: 3
+  Loads: 16
+
+MATERIAL PROPERTIES:
+  Name: concrete_c280
+  Elastic Modulus (E): 2509980.0796022266 Pa
+  Poisson's Ratio (ν): 0.2
+  Density (ρ): 0.24464831804281342 kg/m³
+  Shear Modulus (G): 1045825.0331675945 Pa
+  Concrete Strength (fc): 280 MPa
+
+
+ENABLED ANALYSES:
+  static, modal
+  Total enabled: 2
+
+Generated on: TestBuilding_V2
+Export directory: d:\DocLibrary\Tesis de Titulacion\Tesis2024\OpenSees_Model\opensees-dev\examples\./test_exports_v2
